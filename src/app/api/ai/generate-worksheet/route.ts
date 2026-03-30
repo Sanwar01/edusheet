@@ -1,114 +1,191 @@
-import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { GenerateWorksheetInputSchema } from '@/lib/validators/ai';
 import { WorksheetContentSchema } from '@/lib/validators/worksheet';
 import { buildWorksheetPrompt } from '@/features/ai/prompt-builder';
+import { getWorksheetAiProvider } from '@/features/ai/worksheet-ai-provider';
 import { getOpenAIClient } from '@/lib/openai/client';
+import {
+  generateWorksheetTextWithGemini,
+  getGeminiRetryDelaySeconds,
+  isGeminiRateLimitError,
+} from '@/lib/gemini/generate-worksheet';
+import { parseModelJsonOutput } from '@/lib/ai/parse-model-json';
 import { buildLayout, defaultTheme } from '@/features/worksheets/defaults';
 import { FREE_PLAN_LIMITS, getMonthStartIso, isProPlan } from '@/features/billing/limits';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { insertAuditLog } from '@/lib/audit';
+import { apiJsonError, logApiError, withApiErrorHandling } from '@/lib/api/errors';
 
 const AI_GEN_PER_MINUTE = 8;
 
-export async function POST(req: Request) {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+type TokenUsage = {
+  model: string;
+  promptTokens: number | null;
+  completionTokens: number | null;
+  totalTokens: number | null;
+};
 
-  if (!checkRateLimit(`ai-gen:${user.id}`, AI_GEN_PER_MINUTE, 60_000)) {
-    return NextResponse.json({ error: 'Too many generation requests. Try again shortly.' }, { status: 429 });
+async function generateOnce(
+  provider: ReturnType<typeof getWorksheetAiProvider>,
+  prompt: string,
+): Promise<{ rawText: string } & TokenUsage> {
+  if (provider === 'gemini') {
+    const r = await generateWorksheetTextWithGemini(prompt);
+    return {
+      rawText: r.text,
+      model: r.model,
+      promptTokens: r.promptTokens,
+      completionTokens: r.completionTokens,
+      totalTokens: r.totalTokens,
+    };
   }
 
-  const body = await req.json();
-  const parsedInput = GenerateWorksheetInputSchema.safeParse(body);
-  if (!parsedInput.success) {
-    return NextResponse.json({ error: parsedInput.error.flatten() }, { status: 400 });
-  }
-
-  const { data: sub } = await supabase
-    .from('subscriptions')
-    .select('plan,status')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (!isProPlan(sub?.plan, sub?.status)) {
-    const { count } = await supabase
-      .from('ai_generations')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .gte('created_at', getMonthStartIso());
-
-    if ((count ?? 0) >= FREE_PLAN_LIMITS.generationsPerMonth) {
-      return NextResponse.json({ error: 'Free plan generation limit reached.' }, { status: 402 });
-    }
-  }
-
-  const prompt = buildWorksheetPrompt(parsedInput.data);
   const openai = getOpenAIClient();
+  const modelName = process.env.OPENAI_MODEL ?? 'gpt-4.1-mini';
+  const completion = await openai.responses.create({
+    model: modelName,
+    input: prompt,
+    temperature: 0.2,
+  });
 
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    const completion = await openai.responses.create({
-      model: process.env.OPENAI_MODEL ?? 'gpt-4.1-mini',
-      input: prompt,
-      temperature: 0.2,
-    });
+  const rawText = completion.output_text?.trim() ?? '';
+  return {
+    rawText,
+    model: modelName,
+    promptTokens: completion.usage?.input_tokens ?? null,
+    completionTokens: completion.usage?.output_tokens ?? null,
+    totalTokens: completion.usage?.total_tokens ?? null,
+  };
+}
 
-    const output = completion.output_text?.trim();
-    if (!output) continue;
+export async function POST(req: Request) {
+  return withApiErrorHandling('POST /api/ai/generate-worksheet', async () => {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return apiJsonError('Unauthorized', 401);
 
-    try {
-      const json = JSON.parse(output);
-      const valid = WorksheetContentSchema.safeParse(json);
-
-      if (!valid.success) continue;
-
-      const content = valid.data;
-      const layout = buildLayout(content);
-
-      const { data: worksheet, error } = await supabase
-        .from('worksheets')
-        .insert({
-          user_id: user.id,
-          title: content.title,
-          subject: parsedInput.data.subject,
-          grade_level: parsedInput.data.gradeLevel,
-          status: 'draft',
-          content_json: content,
-          layout_json: layout,
-          theme_json: defaultTheme,
-        })
-        .select('id')
-        .single();
-
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-      await supabase.from('ai_generations').insert({
-        user_id: user.id,
-        worksheet_id: worksheet.id,
-        prompt,
-        parsed_result: content,
-        model: process.env.OPENAI_MODEL ?? 'gpt-4.1-mini',
-        prompt_tokens: completion.usage?.input_tokens ?? null,
-        completion_tokens: completion.usage?.output_tokens ?? null,
-        total_tokens: completion.usage?.total_tokens ?? null,
-      });
-
-      await insertAuditLog({
-        userId: user.id,
-        action: 'worksheet.ai_generate',
-        resourceType: 'worksheet',
-        resourceId: worksheet.id,
-        metadata: { model: process.env.OPENAI_MODEL ?? 'gpt-4.1-mini' },
-      });
-
-      return NextResponse.json({ worksheetId: worksheet.id }, { status: 201 });
-    } catch {
-      continue;
+    if (!checkRateLimit(`ai-gen:${user.id}`, AI_GEN_PER_MINUTE, 60_000)) {
+      return apiJsonError('Too many generation requests. Try again shortly.', 429);
     }
-  }
 
-  return NextResponse.json({ error: 'Could not produce valid worksheet JSON' }, { status: 422 });
+    const provider = getWorksheetAiProvider();
+    if (provider === 'gemini' && !process.env.GEMINI_API_KEY?.trim()) {
+      return apiJsonError('Worksheet AI is set to Gemini but GEMINI_API_KEY is missing.', 503);
+    }
+    if (provider === 'openai' && !process.env.OPENAI_API_KEY?.trim()) {
+      return apiJsonError('Worksheet AI is set to OpenAI but OPENAI_API_KEY is missing.', 503);
+    }
+
+    const body = await req.json();
+    const parsedInput = GenerateWorksheetInputSchema.safeParse(body);
+    if (!parsedInput.success) {
+      return apiJsonError('Validation failed', 400, parsedInput.error.flatten());
+    }
+
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .select('plan,status')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!isProPlan(sub?.plan, sub?.status)) {
+      const { count } = await supabase
+        .from('ai_generations')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', getMonthStartIso());
+
+      if ((count ?? 0) >= FREE_PLAN_LIMITS.generationsPerMonth) {
+        return apiJsonError('Free plan generation limit reached.', 402);
+      }
+    }
+
+    const prompt = buildWorksheetPrompt(parsedInput.data);
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      let gen: { rawText: string } & TokenUsage;
+      try {
+        gen = await generateOnce(provider, prompt);
+      } catch (e) {
+        if (provider === 'gemini' && isGeminiRateLimitError(e)) {
+          const retryAfter = getGeminiRetryDelaySeconds(e) ?? 20;
+          return Response.json(
+            {
+              error:
+                'Gemini quota/rate limit reached. Please retry after the suggested delay or switch provider.',
+              retryAfterSeconds: retryAfter,
+            },
+            { status: 429, headers: { 'Retry-After': String(retryAfter) } },
+          );
+        }
+        logApiError(`POST /api/ai/generate-worksheet (attempt ${attempt + 1})`, e);
+        continue;
+      }
+
+      if (!gen.rawText) continue;
+
+      try {
+        const json = parseModelJsonOutput(gen.rawText);
+        const valid = WorksheetContentSchema.safeParse(json);
+
+        if (!valid.success) continue;
+
+        const content = valid.data;
+        const layout = buildLayout(content);
+
+        const { data: worksheet, error } = await supabase
+          .from('worksheets')
+          .insert({
+            user_id: user.id,
+            title: content.title,
+            subject: parsedInput.data.subject,
+            grade_level: parsedInput.data.gradeLevel,
+            status: 'draft',
+            content_json: content,
+            layout_json: layout,
+            theme_json: defaultTheme,
+          })
+          .select('id')
+          .single();
+
+        if (error) return apiJsonError(error.message, 500);
+
+        const { error: genInsertError } = await supabase.from('ai_generations').insert({
+          user_id: user.id,
+          worksheet_id: worksheet.id,
+          prompt,
+          parsed_result: content,
+          model: gen.model,
+          prompt_tokens: gen.promptTokens,
+          completion_tokens: gen.completionTokens,
+          total_tokens: gen.totalTokens,
+        });
+
+        if (genInsertError) {
+          return apiJsonError(genInsertError.message, 500);
+        }
+
+        try {
+          await insertAuditLog({
+            userId: user.id,
+            action: 'worksheet.ai_generate',
+            resourceType: 'worksheet',
+            resourceId: worksheet.id,
+            metadata: { model: gen.model, provider },
+          });
+        } catch (auditErr) {
+          logApiError('POST /api/ai/generate-worksheet (audit)', auditErr);
+        }
+
+        return Response.json({ worksheetId: worksheet.id }, { status: 201 });
+      } catch (e) {
+        logApiError(`POST /api/ai/generate-worksheet (parse attempt ${attempt + 1})`, e);
+        continue;
+      }
+    }
+
+    return apiJsonError('Could not produce valid worksheet JSON', 422);
+  });
 }

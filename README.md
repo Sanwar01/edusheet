@@ -8,7 +8,7 @@ EduSheet AI is a SaaS web app for teachers to generate worksheet drafts with AI,
 - Tailwind CSS
 - Supabase (Auth, Postgres, RLS)
 - Stripe subscriptions
-- OpenAI worksheet generation
+- OpenAI or **Google Gemini** worksheet generation (configurable)
 - Zod validation
 - React Hook Form + dnd-kit (editor interactions)
 - `@react-pdf/renderer` for PDF export
@@ -43,6 +43,12 @@ Copy `.env.example` to `.env.local` and populate values:
 ```bash
 cp .env.example .env.local
 ```
+
+### Worksheet AI provider (OpenAI vs Gemini)
+
+- **`WORKSHEET_AI_PROVIDER`**: `openai` or `gemini` (optional).
+- If unset: uses **Gemini** when only `GEMINI_API_KEY` is set; otherwise **OpenAI** when `OPENAI_API_KEY` is set.
+- For local testing with Gemini: set `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`, e.g. `gemini-2.0-flash`). You can omit `OPENAI_API_KEY` to force Gemini, or set `WORKSHEET_AI_PROVIDER=gemini` explicitly.
 
 ## Local Setup
 

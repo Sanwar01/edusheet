@@ -1,10 +1,10 @@
 import React from 'react';
-import { NextResponse } from 'next/server';
 import { Document, Page, Text, View, StyleSheet, renderToBuffer } from '@react-pdf/renderer';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { FREE_PLAN_LIMITS, getMonthStartIso, isProPlan } from '@/features/billing/limits';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { insertAuditLog } from '@/lib/audit';
+import { apiJsonError, handleUnknownError, logApiError, withApiErrorHandling } from '@/lib/api/errors';
 
 const EXPORT_PER_MINUTE = 12;
 
@@ -43,68 +43,85 @@ function WorksheetPdf({ content }: { content: Content }) {
 }
 
 export async function POST(req: Request) {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  return withApiErrorHandling('POST /api/exports/pdf', async () => {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user) return apiJsonError('Unauthorized', 401);
 
-  if (!checkRateLimit(`export-pdf:${user.id}`, EXPORT_PER_MINUTE, 60_000)) {
-    return NextResponse.json({ error: 'Too many export requests. Try again shortly.' }, { status: 429 });
-  }
-
-  const { worksheetId } = (await req.json()) as { worksheetId: string };
-  if (!worksheetId) return NextResponse.json({ error: 'worksheetId required' }, { status: 400 });
-
-  const { data: sub } = await supabase
-    .from('subscriptions')
-    .select('plan,status')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (!isProPlan(sub?.plan, sub?.status)) {
-    const { count } = await supabase
-      .from('exports')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .gte('created_at', getMonthStartIso());
-
-    if ((count ?? 0) >= FREE_PLAN_LIMITS.exportsPerMonth) {
-      return NextResponse.json({ error: 'Free plan export limit reached.' }, { status: 402 });
+    if (!checkRateLimit(`export-pdf:${user.id}`, EXPORT_PER_MINUTE, 60_000)) {
+      return apiJsonError('Too many export requests. Try again shortly.', 429);
     }
-  }
 
-  const { data: worksheet, error } = await supabase
-    .from('worksheets')
-    .select('id, content_json')
-    .eq('id', worksheetId)
-    .eq('user_id', user.id)
-    .single();
+    const payload = (await req.json()) as { worksheetId?: string };
+    const worksheetId = payload.worksheetId;
+    if (!worksheetId) return apiJsonError('worksheetId required', 400);
 
-  if (error || !worksheet) return NextResponse.json({ error: 'Worksheet not found' }, { status: 404 });
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .select('plan,status')
+      .eq('user_id', user.id)
+      .maybeSingle();
 
-  const content = worksheet.content_json as Content;
-  const pdfBuffer = await renderToBuffer(<WorksheetPdf content={content} />);
+    if (!isProPlan(sub?.plan, sub?.status)) {
+      const { count } = await supabase
+        .from('exports')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', getMonthStartIso());
 
-  await supabase.from('exports').insert({
-    user_id: user.id,
-    worksheet_id: worksheetId,
-    format: 'pdf',
-  });
+      if ((count ?? 0) >= FREE_PLAN_LIMITS.exportsPerMonth) {
+        return apiJsonError('Free plan export limit reached.', 402);
+      }
+    }
 
-  await insertAuditLog({
-    userId: user.id,
-    action: 'worksheet.export_pdf',
-    resourceType: 'worksheet',
-    resourceId: worksheetId,
-    metadata: { format: 'pdf' },
-  });
+    const { data: worksheet, error } = await supabase
+      .from('worksheets')
+      .select('id, content_json')
+      .eq('id', worksheetId)
+      .eq('user_id', user.id)
+      .single();
 
-  return new NextResponse(new Uint8Array(pdfBuffer), {
-    headers: {
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="${worksheetId}.pdf"`,
-    },
+    if (error || !worksheet) return apiJsonError('Worksheet not found', 404);
+
+    const content = worksheet.content_json as Content;
+
+    let pdfBuffer: Buffer;
+    try {
+      pdfBuffer = await renderToBuffer(<WorksheetPdf content={content} />);
+    } catch (e) {
+      return handleUnknownError('POST /api/exports/pdf (render)', e);
+    }
+
+    const { error: insertExportError } = await supabase.from('exports').insert({
+      user_id: user.id,
+      worksheet_id: worksheetId,
+      format: 'pdf',
+    });
+
+    if (insertExportError) {
+      return apiJsonError(insertExportError.message, 500);
+    }
+
+    try {
+      await insertAuditLog({
+        userId: user.id,
+        action: 'worksheet.export_pdf',
+        resourceType: 'worksheet',
+        resourceId: worksheetId,
+        metadata: { format: 'pdf' },
+      });
+    } catch (e) {
+      logApiError('POST /api/exports/pdf (audit)', e);
+    }
+
+    return new Response(new Uint8Array(pdfBuffer), {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${worksheetId}.pdf"`,
+      },
+    });
   });
 }
