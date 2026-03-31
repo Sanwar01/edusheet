@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation';
 import { requireUser } from '@/features/auth/guards';
 import { EditorShell } from '@/components/worksheets/editor-shell';
 import type { WorksheetContent, WorksheetTheme } from '@/types/worksheet';
-import { EditorToolbar } from '@/components/worksheets/editor-toolbar';
 
 export default async function WorksheetEditorPage({
   params,
