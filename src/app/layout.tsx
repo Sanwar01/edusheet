@@ -16,10 +16,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <Toaster />
-      <Sonner />
-      <body className="min-h-screen bg-slate-50 text-slate-900">
-        <AuthProvider>{children}</AuthProvider>
+      <body
+        suppressHydrationWarning
+        className="min-h-screen bg-slate-50 text-slate-900"
+      >
+        <AuthProvider>
+          {children}
+          <Toaster />
+          <Sonner />
+        </AuthProvider>
       </body>
     </html>
   );
