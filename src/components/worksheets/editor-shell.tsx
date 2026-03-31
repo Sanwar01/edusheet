@@ -24,6 +24,8 @@ import {
   newId,
 } from '@/components/worksheets/editor-shell.helpers';
 import { ThemeSettingsSidebar } from './theme-settings-sidebar';
+import { toast } from 'sonner';
+import { getApiErrorMessage } from '@/lib/api/client';
 
 const fontFamilyClassMap: Record<WorksheetTheme['fontFamily'], string> = {
   inter: 'font-sans',
@@ -155,6 +157,13 @@ export const EditorShell = ({
   };
 
   const saveDraft = async () => {
+    if (isSaving) return;
+    if (!content.title.trim()) {
+      toast.error('Please add a worksheet title before saving.');
+      setSaveState('error');
+      return;
+    }
+
     try {
       setIsSaving(true);
       setSaveState('idle');
@@ -173,18 +182,33 @@ export const EditorShell = ({
       });
 
       if (!res.ok) {
-        throw new Error('Failed to save worksheet');
+        throw new Error(
+          await getApiErrorMessage(res, 'Failed to save worksheet.'),
+        );
       }
 
       setSaveState('saved');
-    } catch {
+      toast.success('Worksheet saved');
+    } catch (error) {
       setSaveState('error');
+      toast.error('Save failed', {
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Could not save your worksheet.',
+      });
     } finally {
       setIsSaving(false);
     }
   };
 
   const exportPdf = async () => {
+    if (isExporting) return;
+    if (!content.sections.length) {
+      toast.error('Add at least one section before exporting.');
+      return;
+    }
+
     try {
       setIsExporting(true);
       const res = await fetch('/api/exports/pdf', {
@@ -192,20 +216,14 @@ export const EditorShell = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ worksheetId }),
       });
-
       if (!res.ok) {
-        throw new Error('Failed to export PDF');
+        throw new Error(await getApiErrorMessage(res, 'Failed to export PDF.'));
       }
-
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${content.title || worksheetId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      toast.success('PDF exported');
+    } catch (error) {
+      toast.error('Failed to export PDF', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      });
     } finally {
       setIsExporting(false);
     }

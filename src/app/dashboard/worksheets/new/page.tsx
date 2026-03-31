@@ -16,6 +16,8 @@ import {
 import { Loader2, Sparkles, FilePlus } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { GRADE_LEVELS, QUESTION_TYPES, SUBJECTS } from '@/constants';
+import { toast } from 'sonner';
+import { fetchJson } from '@/lib/api/client';
 
 export default function NewWorksheetPage() {
   const router = useRouter();
@@ -32,40 +34,47 @@ export default function NewWorksheetPage() {
   >('mixed');
   const [additionalInstructions, setAdditionalInstructions] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const toggleType = (val: string) => {
-    setQuestionTypes((prev) =>
-      prev.includes(val) ? prev.filter((t) => t !== val) : [...prev, val],
-    );
-  };
 
   async function handleGenerate() {
-    setLoading(true);
-    setError(null);
-    const res = await fetch('/api/ai/generate-worksheet', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        topic,
-        subject,
-        gradeLevel,
-        numQuestions,
-        questionTypes,
-        difficulty,
-        additionalInstructions,
-      }),
-    });
-
-    const json = await res.json();
-    setLoading(false);
-
-    if (!res.ok) {
-      setError(json.error ?? 'Failed to generate worksheet');
+    if (loading) return;
+    if (!topic.trim()) {
+      toast.error('Please enter a topic first.');
+      return;
+    }
+    if (questionTypes.length === 0) {
+      toast.error('Select at least one question type.');
       return;
     }
 
-    router.push(`/dashboard/worksheets/${json.worksheetId}/edit`);
+    setLoading(true);
+    try {
+      const json = await fetchJson<{ worksheetId: string }>(
+        '/api/ai/generate-worksheet',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            topic,
+            subject,
+            gradeLevel,
+            numQuestions,
+            questionTypes,
+            difficulty,
+            additionalInstructions,
+          }),
+        },
+        'Failed to generate worksheet.',
+      );
+
+      router.push(`/dashboard/worksheets/${json.worksheetId}/edit`);
+    } catch (error) {
+      toast.error('Could not generate worksheet', {
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+      });
+    } finally {
+      setLoading(false);
+    }
   }
 
   // Quick create without AI

@@ -10,6 +10,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 import { MoreHorizontal, Copy, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { assertApiOk } from '@/lib/api/client';
 
 export const WorksheetRowActions = ({
   worksheetId,
@@ -19,13 +21,35 @@ export const WorksheetRowActions = ({
   const router = useRouter();
 
   const duplicateWorksheet = async () => {
-    await fetch(`/api/worksheets/${worksheetId}/duplicate`, { method: 'POST' });
-    router.refresh();
+    try {
+      const res = await fetch(`/api/worksheets/${worksheetId}/duplicate`, {
+        method: 'POST',
+      });
+      await assertApiOk(res, 'Failed to duplicate worksheet.');
+      toast.success('Worksheet duplicated');
+      router.refresh();
+    } catch (error) {
+      toast.error('Duplicate failed', {
+        description:
+          error instanceof Error ? error.message : 'Could not duplicate worksheet.',
+      });
+    }
   };
 
   const deleteWorksheet = async () => {
-    await fetch(`/api/worksheets/${worksheetId}`, { method: 'DELETE' });
-    router.refresh();
+    try {
+      const res = await fetch(`/api/worksheets/${worksheetId}`, {
+        method: 'DELETE',
+      });
+      await assertApiOk(res, 'Failed to delete worksheet.');
+      toast.success('Worksheet deleted');
+      router.refresh();
+    } catch (error) {
+      toast.error('Delete failed', {
+        description:
+          error instanceof Error ? error.message : 'Could not delete worksheet.',
+      });
+    }
   };
 
   return (
