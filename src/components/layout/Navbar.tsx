@@ -1,8 +1,11 @@
+'use client';
 import Link from 'next/link';
 import { BookOpen } from 'lucide-react';
 import { Button } from '../ui/button';
+import { useAuth } from '@/context/auth';
 
 export function Navbar() {
+  const { user } = useAuth();
   return (
     <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
       <div className="container flex h-16 items-center justify-between">
@@ -14,12 +17,20 @@ export function Navbar() {
           EduSheet AI
         </Link>
         <div className="flex items-center gap-3">
-          <Button variant="ghost" asChild>
-            <Link href="/sign-in">Sign In</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/sign-up">Get Started</Link>
-          </Button>
+          {user ? (
+            <Button variant="ghost" asChild>
+              <Link href="/dashboard">Dashboard</Link>
+            </Button>
+          ) : (
+            <>
+              <Button variant="ghost" asChild>
+                <Link href="/sign-in">Sign In</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/sign-up">Get Started</Link>
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </nav>
