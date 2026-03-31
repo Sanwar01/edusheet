@@ -2,7 +2,9 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { getStripeClient } from '@/lib/stripe/client';
 import { apiJsonError, handleUnknownError, withApiErrorHandling } from '@/lib/api/errors';
 
-export async function POST() {
+const TRIAL_DAYS = 7;
+
+export async function POST(req: Request) {
   return withApiErrorHandling('POST /api/stripe/checkout', async () => {
     const supabase = await createSupabaseServerClient();
     const {
@@ -17,9 +19,21 @@ export async function POST() {
 
     const { data: sub } = await supabase
       .from('subscriptions')
-      .select('stripe_customer_id')
+      .select('stripe_customer_id,stripe_subscription_id')
       .eq('user_id', user.id)
       .maybeSingle();
+
+    let wantsTrial = false;
+    try {
+      const body = (await req.json()) as { trial?: boolean };
+      wantsTrial = Boolean(body?.trial);
+    } catch {
+      wantsTrial = false;
+    }
+
+    if (wantsTrial && sub?.stripe_subscription_id) {
+      return apiJsonError('Free trial is only available for first-time upgrades.', 409);
+    }
 
     let stripe;
     try {
@@ -36,7 +50,8 @@ export async function POST() {
         line_items: [{ price: process.env.STRIPE_PRO_PRICE_ID!, quantity: 1 }],
         success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?success=1`,
         cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?canceled=1`,
-        metadata: { user_id: user.id },
+        metadata: { user_id: user.id, flow: wantsTrial ? 'trial' : 'upgrade' },
+        subscription_data: wantsTrial ? { trial_period_days: TRIAL_DAYS } : undefined,
       });
 
       if (!session.url) {

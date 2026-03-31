@@ -18,8 +18,15 @@ export const DashboardNavbar = async () => {
         </div>
         <div className="flex items-center gap-3">
           {!isPro && (
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-              <Crown className="h-3.5 w-3.5 text-warning" /> Upgrade to Pro
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs"
+              asChild
+            >
+              <Link href="/dashboard/billing">
+                <Crown className="h-3.5 w-3.5 text-warning" /> Upgrade to Pro
+              </Link>
             </Button>
           )}
           <form action={signOutAction}>

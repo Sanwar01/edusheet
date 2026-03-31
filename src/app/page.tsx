@@ -84,7 +84,7 @@ export default function LandingPage() {
             </p>
             <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Button size="lg" className="gap-2 text-base" asChild>
-                <Link href="/signup">
+                <Link href="/sign-up">
                   Start Creating <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
@@ -169,7 +169,7 @@ export default function LandingPage() {
                     variant={plan.highlighted ? 'default' : 'outline'}
                     asChild
                   >
-                    <Link href="/signup">{plan.cta}</Link>
+                    <Link href="/sign-up">{plan.cta}</Link>
                   </Button>
                 </div>
               ))}

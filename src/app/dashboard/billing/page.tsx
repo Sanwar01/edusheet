@@ -1,64 +1,92 @@
-'use client';
+import { requireUser } from '@/features/auth/guards';
+import {
+  FREE_PLAN_LIMITS,
+  getMonthStartIso,
+  isProPlan,
+} from '@/features/billing/limits';
+import { BillingActions } from '@/components/dashboard/billing-actions';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import { fetchJson } from '@/lib/api/client';
+export default async function BillingPage() {
+  const { user, supabase } = await requireUser();
+  const monthStart = getMonthStartIso();
 
-export default function BillingPage() {
-  const [loadingCheckout, setLoadingCheckout] = useState(false);
-  const [loadingPortal, setLoadingPortal] = useState(false);
+  const [{ data: subscription }, aiCountRes, exportCountRes] = await Promise.all([
+    supabase
+      .from('subscriptions')
+      .select(
+        'plan,status,current_period_end,cancel_at_period_end,stripe_customer_id',
+      )
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('ai_generations')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .gte('created_at', monthStart),
+    supabase
+      .from('exports')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .gte('created_at', monthStart),
+  ]);
 
-  async function goToCheckout() {
-    if (loadingCheckout) return;
-    setLoadingCheckout(true);
-    try {
-      const json = await fetchJson<{ url?: string }>(
-        '/api/stripe/checkout',
-        { method: 'POST' },
-        'Could not start checkout.',
-      );
-      if (json.url) window.location.href = json.url;
-      else throw new Error('Checkout URL is missing.');
-    } catch (error) {
-      toast.error('Checkout failed', {
-        description:
-          error instanceof Error ? error.message : 'Please try again.',
-      });
-    } finally {
-      setLoadingCheckout(false);
-    }
-  }
-
-  async function goToPortal() {
-    if (loadingPortal) return;
-    setLoadingPortal(true);
-    try {
-      const json = await fetchJson<{ url?: string }>(
-        '/api/stripe/portal',
-        { method: 'POST' },
-        'Could not open billing portal.',
-      );
-      if (json.url) window.location.href = json.url;
-      else throw new Error('Billing portal URL is missing.');
-    } catch (error) {
-      toast.error('Billing portal failed', {
-        description:
-          error instanceof Error ? error.message : 'Please try again.',
-      });
-    } finally {
-      setLoadingPortal(false);
-    }
-  }
+  const isPro = isProPlan(subscription?.plan, subscription?.status);
+  const canOpenPortal = Boolean(subscription?.stripe_customer_id);
+  const aiUsage = aiCountRes.count ?? 0;
+  const exportUsage = exportCountRes.count ?? 0;
 
   return (
-    <main className='mx-auto max-w-2xl space-y-4 p-6'>
-      <h1 className='text-2xl font-semibold'>Billing</h1>
-      <p className='text-slate-600'>Upgrade to Pro for unlimited generations and exports.</p>
-      <div className='flex gap-3'>
-        <Button onClick={goToCheckout}>{loadingCheckout ? 'Loading...' : 'Upgrade to Pro'}</Button>
-        <Button variant='outline' onClick={goToPortal}>{loadingPortal ? 'Loading...' : 'Manage billing'}</Button>
-      </div>
+    <main className="mx-auto max-w-3xl space-y-6 p-6">
+      <section className="rounded-xl border bg-white p-5">
+        <h1 className="text-2xl font-semibold">Billing</h1>
+        <p className="mt-1 text-sm text-slate-600">
+          Manage your plan, trial, and Stripe billing.
+        </p>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-lg border bg-slate-50 p-4">
+            <p className="text-xs uppercase tracking-wide text-slate-500">
+              Current plan
+            </p>
+            <p className="mt-1 text-lg font-semibold">{isPro ? 'Pro' : 'Free'}</p>
+            <p className="mt-1 text-sm text-slate-600">
+              Status: {subscription?.status ?? 'free'}
+            </p>
+            {subscription?.cancel_at_period_end ? (
+              <p className="mt-1 text-sm text-amber-700">
+                Your plan will cancel at period end.
+              </p>
+            ) : null}
+          </div>
+
+          <div className="rounded-lg border bg-slate-50 p-4">
+            <p className="text-xs uppercase tracking-wide text-slate-500">
+              Monthly usage
+            </p>
+            <p className="mt-1 text-sm text-slate-700">
+              AI generations:{' '}
+              <span className="font-medium">
+                {isPro ? aiUsage : `${aiUsage}/${FREE_PLAN_LIMITS.generationsPerMonth}`}
+              </span>
+            </p>
+            <p className="mt-1 text-sm text-slate-700">
+              PDF exports:{' '}
+              <span className="font-medium">
+                {isPro ? exportUsage : `${exportUsage}/${FREE_PLAN_LIMITS.exportsPerMonth}`}
+              </span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-xl border bg-white p-5">
+        <h2 className="text-lg font-semibold">Plans</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Free includes capped usage. Pro unlocks unlimited generations and
+          exports.
+        </p>
+        <BillingActions isPro={isPro} canOpenPortal={canOpenPortal} />
+      </section>
     </main>
   );
 }
