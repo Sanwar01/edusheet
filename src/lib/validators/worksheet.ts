@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const QuestionSchema = z.object({
   id: z.string().min(1),
-  prompt: z.string().min(1),
+  prompt: z.string().default(''),
   question_type: z.enum([
     'short_answer',
     'multiple_choice',
@@ -19,14 +19,14 @@ export const QuestionSchema = z.object({
 export const SectionSchema = z.object({
   id: z.string().min(1),
   type: z.literal('section'),
-  heading: z.string().min(1),
-  questions: z.array(QuestionSchema).min(1),
+  heading: z.string().default(''),
+  questions: z.array(QuestionSchema).default([]),
 });
 
 export const WorksheetContentSchema = z.object({
   title: z.string().min(1),
-  instructions: z.string().min(1),
-  sections: z.array(SectionSchema).min(1),
+  instructions: z.string().default(''),
+  sections: z.array(SectionSchema).default([]),
 });
 
 export const LayoutSchema = z.object({

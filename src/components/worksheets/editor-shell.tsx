@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   DndContext,
   PointerSensor,
@@ -25,7 +26,7 @@ import {
 } from '@/components/worksheets/editor-shell.helpers';
 import { ThemeSettingsSidebar } from './theme-settings-sidebar';
 import { toast } from 'sonner';
-import { getApiErrorMessage } from '@/lib/api/client';
+import { fetchJson, getApiErrorMessage } from '@/lib/api/client';
 
 const fontFamilyClassMap: Record<WorksheetTheme['fontFamily'], string> = {
   inter: 'font-sans',
@@ -45,10 +46,14 @@ export const EditorShell = ({
   initialContent,
   initialTheme,
 }: {
-  worksheetId: string;
+  worksheetId?: string;
   initialContent: WorksheetContent;
   initialTheme: WorksheetTheme;
 }) => {
+  const router = useRouter();
+  const [resolvedWorksheetId, setResolvedWorksheetId] = useState<string | null>(
+    worksheetId ?? null,
+  );
   const [content, setContent] = useState(initialContent);
   const [theme, setTheme] = useState(initialTheme);
   const [showThemeSidebar, setShowThemeSidebar] = useState(false);
@@ -169,17 +174,41 @@ export const EditorShell = ({
       setSaveState('idle');
 
       const layout = buildLayoutPayload(content, theme.spacingPreset);
-
-      const res = await fetch(`/api/worksheets/${worksheetId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: content.title,
-          content_json: content,
-          layout_json: layout,
-          theme_json: theme,
-        }),
-      });
+      let res: Response;
+      if (resolvedWorksheetId) {
+        res = await fetch(`/api/worksheets/${resolvedWorksheetId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: content.title,
+            content_json: content,
+            layout_json: layout,
+            theme_json: theme,
+          }),
+        });
+      } else {
+        const created = await fetchJson<{ data: { id: string } }>(
+          '/api/worksheets',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: content.title,
+              subject: 'General',
+              grade_level: '5',
+              content_json: content,
+              layout_json: layout,
+              theme_json: theme,
+            }),
+          },
+          'Failed to create worksheet.',
+        );
+        setResolvedWorksheetId(created.data.id);
+        router.replace(`/dashboard/worksheets/${created.data.id}/edit`);
+        setSaveState('saved');
+        toast.success('Worksheet created');
+        return;
+      }
 
       if (!res.ok) {
         throw new Error(
@@ -204,6 +233,10 @@ export const EditorShell = ({
 
   const exportPdf = async () => {
     if (isExporting) return;
+    if (!resolvedWorksheetId) {
+      toast.error('Save your worksheet first before exporting.');
+      return;
+    }
     if (!content.sections.length) {
       toast.error('Add at least one section before exporting.');
       return;
@@ -214,7 +247,7 @@ export const EditorShell = ({
       const res = await fetch('/api/exports/pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ worksheetId }),
+        body: JSON.stringify({ worksheetId: resolvedWorksheetId }),
       });
       if (!res.ok) {
         throw new Error(await getApiErrorMessage(res, 'Failed to export PDF.'));
@@ -257,7 +290,7 @@ export const EditorShell = ({
 
       <div className="flex flex-1 bg-slate-50">
         <main className="flex-1 overflow-auto p-4 md:p-8">
-          <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 lg:flex-row lg:items-start">
+          <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 lg:flex-row lg:items-start">
             {isBlankWorksheet && (
               <aside className="w-full rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-24 lg:w-72">
                 <div className="mb-3 flex items-center gap-2">

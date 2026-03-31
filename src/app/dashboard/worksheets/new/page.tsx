@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,9 +18,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { GRADE_LEVELS, QUESTION_TYPES, SUBJECTS } from '@/constants';
 import { toast } from 'sonner';
 import { fetchJson } from '@/lib/api/client';
+import { EditorShell } from '@/components/worksheets/editor-shell';
 
 export default function NewWorksheetPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [topic, setTopic] = useState('');
   const [subject, setSubject] = useState('');
   const [gradeLevel, setGradeLevel] = useState('5');
@@ -34,6 +36,8 @@ export default function NewWorksheetPage() {
   >('mixed');
   const [additionalInstructions, setAdditionalInstructions] = useState('');
   const [loading, setLoading] = useState(false);
+  const isBlankMode = searchParams.get('mode') === 'blank';
+  const blankTitle = searchParams.get('title')?.trim() || 'Untitled Worksheet';
 
   async function handleGenerate() {
     if (loading) return;
@@ -79,25 +83,31 @@ export default function NewWorksheetPage() {
 
   // Quick create without AI
   const handleBlankCreate = async () => {
-    // const { data, error } = await supabase
-    //   .from('worksheets')
-    //   .insert({
-    //     user_id: user!.id,
-    //     title: topic || 'Untitled Worksheet',
-    //     subject,
-    //     grade_level: gradeLevel,
-    //     content_json: {
-    //       title: topic || 'Untitled Worksheet',
-    //       instructions: '',
-    //       sections: [],
-    //     } as any,
-    //   })
-    //   .select()
-    //   .single();
-    // if (!error && data) {
-    //   router.push(`/dashboard/worksheets/${data.id}`);
-    // }
+    const title = topic.trim() || 'Untitled Worksheet';
+    router.push(
+      `/dashboard/worksheets/new?mode=blank&title=${encodeURIComponent(title)}`,
+    );
   };
+
+  if (isBlankMode) {
+    return (
+      <EditorShell
+        initialContent={{
+          title: blankTitle,
+          instructions: '',
+          sections: [],
+        }}
+        initialTheme={{
+          headingFontSize: 28,
+          bodyFontSize: 16,
+          fontFamily: 'inter',
+          primaryColor: '#2563eb',
+          textColor: '#111827',
+          spacingPreset: 'comfortable',
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -111,7 +121,10 @@ export default function NewWorksheetPage() {
               Let AI do the heavy lifting, or start from scratch.
             </p>
           </div>
-          <Button variant="outline" onClick={handleBlankCreate}>
+          <Button
+            variant="outline"
+            onClick={handleBlankCreate}
+          >
             <FilePlus className="h-4 w-4" />
             Start Blank
           </Button>
