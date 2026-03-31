@@ -5,6 +5,20 @@ export type QuestionType =
   | 'fill_in_blank'
   | 'matching';
 
+export interface Worksheet {
+  id: string;
+  user_id: string;
+  title: string;
+  subject: string | null;
+  grade_level: string | null;
+  status: string;
+  content_json: WorksheetContent;
+  layout_json: WorksheetLayout;
+  theme_json: WorksheetTheme;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface WorksheetQuestion {
   id: string;
   prompt: string;

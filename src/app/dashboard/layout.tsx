@@ -1,28 +1,39 @@
 import Link from 'next/link';
-import { signOutAction } from '@/features/auth/actions';
 import { Button } from '@/components/ui/button';
+import { Crown, LogOut } from 'lucide-react';
+import { requireUser } from '@/features/auth/guards';
+import { signOutAction } from '@/features/auth/actions';
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { profile } = await requireUser();
+
+  const isPro = profile?.plan === 'pro';
+
   return (
-    <div className='min-h-screen'>
-      <header className='border-b bg-white'>
-        <div className='mx-auto flex max-w-7xl items-center justify-between px-6 py-3'>
-          <div className='flex items-center gap-4'>
-            <Link href='/dashboard' className='font-semibold'>
+    <div className="min-h-screen">
+      <header className="border-b bg-white">
+        <div className="container flex items-center justify-between py-3">
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard" className="font-semibold">
               EduSheet AI
             </Link>
-            <Link href='/dashboard/worksheets' className='text-sm text-slate-600'>
-              Worksheets
-            </Link>
-            <Link href='/dashboard/billing' className='text-sm text-slate-600'>
-              Billing
-            </Link>
           </div>
-          <form action={signOutAction}>
-            <Button type='submit' variant='outline'>
-              Sign out
-            </Button>
-          </form>
+          <div className="flex items-center gap-3">
+            {!isPro && (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                <Crown className="h-3.5 w-3.5 text-warning" /> Upgrade to Pro
+              </Button>
+            )}
+            <form action={signOutAction}>
+              <Button variant="ghost" size="sm" type="submit">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </form>
+          </div>
         </div>
       </header>
       {children}
