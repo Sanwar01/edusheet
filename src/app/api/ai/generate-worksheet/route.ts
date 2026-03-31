@@ -11,12 +11,21 @@ import {
 } from '@/lib/gemini/generate-worksheet';
 import { parseModelJsonOutput } from '@/lib/ai/parse-model-json';
 import { buildLayout, defaultTheme } from '@/features/worksheets/defaults';
-import { FREE_PLAN_LIMITS, getMonthStartIso, isProPlan } from '@/features/billing/limits';
+import {
+  FREE_PLAN_LIMITS,
+  getMonthStartIso,
+  isProPlan,
+} from '@/features/billing/limits';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { insertAuditLog } from '@/lib/audit';
-import { apiJsonError, logApiError, withApiErrorHandling } from '@/lib/api/errors';
+import {
+  apiJsonError,
+  logApiError,
+  withApiErrorHandling,
+} from '@/lib/api/errors';
 
-const AI_GEN_PER_MINUTE = 8;
+const AI_GEN_PER_MINUTE = 3;
+const MODEL_OUTPUT_PREVIEW_LENGTH = 1200;
 
 type TokenUsage = {
   model: string;
@@ -24,6 +33,65 @@ type TokenUsage = {
   completionTokens: number | null;
   totalTokens: number | null;
 };
+
+function toShortId(prefix: 'sec' | 'q', value: unknown, fallbackIndex: number): string {
+  const raw = typeof value === 'string' ? value.trim() : '';
+  if (raw.length > 0) return raw;
+  return `${prefix}_${fallbackIndex + 1}`;
+}
+
+function normalizeWorksheetJson(input: unknown): unknown {
+  if (!input || typeof input !== 'object') return input;
+  const root = input as Record<string, unknown>;
+  const sections = Array.isArray(root.sections) ? root.sections : [];
+
+  const normalizedSections = sections
+    .map((section, sectionIndex) => {
+      if (!section || typeof section !== 'object') return null;
+      const sectionObj = section as Record<string, unknown>;
+      const questions = Array.isArray(sectionObj.questions) ? sectionObj.questions : [];
+
+      const normalizedQuestions = questions
+        .map((question, questionIndex) => {
+          if (!question || typeof question !== 'object') return null;
+          const questionObj = question as Record<string, unknown>;
+          return {
+            ...questionObj,
+            id: toShortId('q', questionObj.id, questionIndex),
+            prompt:
+              typeof questionObj.prompt === 'string'
+                ? questionObj.prompt
+                : String(questionObj.prompt ?? ''),
+            options: Array.isArray(questionObj.options)
+              ? questionObj.options.map((o) => String(o))
+              : [],
+          };
+        })
+        .filter(Boolean);
+
+      return {
+        ...sectionObj,
+        id: toShortId('sec', sectionObj.id, sectionIndex),
+        type: 'section',
+        heading:
+          typeof sectionObj.heading === 'string'
+            ? sectionObj.heading
+            : String(sectionObj.heading ?? `Section ${sectionIndex + 1}`),
+        questions: normalizedQuestions,
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    ...root,
+    title: typeof root.title === 'string' ? root.title : String(root.title ?? 'Generated Worksheet'),
+    instructions:
+      typeof root.instructions === 'string'
+        ? root.instructions
+        : String(root.instructions ?? 'Answer all questions.'),
+    sections: normalizedSections,
+  };
+}
 
 async function generateOnce(
   provider: ReturnType<typeof getWorksheetAiProvider>,
@@ -67,21 +135,34 @@ export async function POST(req: Request) {
     if (!user) return apiJsonError('Unauthorized', 401);
 
     if (!checkRateLimit(`ai-gen:${user.id}`, AI_GEN_PER_MINUTE, 60_000)) {
-      return apiJsonError('Too many generation requests. Try again shortly.', 429);
+      return apiJsonError(
+        'Too many generation requests. Try again shortly.',
+        429,
+      );
     }
 
     const provider = getWorksheetAiProvider();
     if (provider === 'gemini' && !process.env.GEMINI_API_KEY?.trim()) {
-      return apiJsonError('Worksheet AI is set to Gemini but GEMINI_API_KEY is missing.', 503);
+      return apiJsonError(
+        'Worksheet AI is set to Gemini but GEMINI_API_KEY is missing.',
+        503,
+      );
     }
     if (provider === 'openai' && !process.env.OPENAI_API_KEY?.trim()) {
-      return apiJsonError('Worksheet AI is set to OpenAI but OPENAI_API_KEY is missing.', 503);
+      return apiJsonError(
+        'Worksheet AI is set to OpenAI but OPENAI_API_KEY is missing.',
+        503,
+      );
     }
 
     const body = await req.json();
     const parsedInput = GenerateWorksheetInputSchema.safeParse(body);
     if (!parsedInput.success) {
-      return apiJsonError('Validation failed', 400, parsedInput.error.flatten());
+      return apiJsonError(
+        'Validation failed',
+        400,
+        parsedInput.error.flatten(),
+      );
     }
 
     const { data: sub } = await supabase
@@ -104,6 +185,9 @@ export async function POST(req: Request) {
 
     const prompt = buildWorksheetPrompt(parsedInput.data);
 
+    let lastValidationDetails: unknown = null;
+    let lastModelOutputPreview: string | null = null;
+
     for (let attempt = 0; attempt < 2; attempt += 1) {
       let gen: { rawText: string } & TokenUsage;
       try {
@@ -120,17 +204,25 @@ export async function POST(req: Request) {
             { status: 429, headers: { 'Retry-After': String(retryAfter) } },
           );
         }
-        logApiError(`POST /api/ai/generate-worksheet (attempt ${attempt + 1})`, e);
+        logApiError(
+          `POST /api/ai/generate-worksheet (attempt ${attempt + 1})`,
+          e,
+        );
         continue;
       }
 
       if (!gen.rawText) continue;
+      lastModelOutputPreview = gen.rawText.slice(0, MODEL_OUTPUT_PREVIEW_LENGTH);
 
       try {
-        const json = parseModelJsonOutput(gen.rawText);
-        const valid = WorksheetContentSchema.safeParse(json);
+        const parsedJson = parseModelJsonOutput(gen.rawText);
+        const normalizedJson = normalizeWorksheetJson(parsedJson);
+        const valid = WorksheetContentSchema.safeParse(normalizedJson);
 
-        if (!valid.success) continue;
+        if (!valid.success) {
+          lastValidationDetails = valid.error.flatten();
+          continue;
+        }
 
         const content = valid.data;
         const layout = buildLayout(content);
@@ -152,16 +244,18 @@ export async function POST(req: Request) {
 
         if (error) return apiJsonError(error.message, 500);
 
-        const { error: genInsertError } = await supabase.from('ai_generations').insert({
-          user_id: user.id,
-          worksheet_id: worksheet.id,
-          prompt,
-          parsed_result: content,
-          model: gen.model,
-          prompt_tokens: gen.promptTokens,
-          completion_tokens: gen.completionTokens,
-          total_tokens: gen.totalTokens,
-        });
+        const { error: genInsertError } = await supabase
+          .from('ai_generations')
+          .insert({
+            user_id: user.id,
+            worksheet_id: worksheet.id,
+            prompt,
+            parsed_result: content,
+            model: gen.model,
+            prompt_tokens: gen.promptTokens,
+            completion_tokens: gen.completionTokens,
+            total_tokens: gen.totalTokens,
+          });
 
         if (genInsertError) {
           return apiJsonError(genInsertError.message, 500);
@@ -181,11 +275,20 @@ export async function POST(req: Request) {
 
         return Response.json({ worksheetId: worksheet.id }, { status: 201 });
       } catch (e) {
-        logApiError(`POST /api/ai/generate-worksheet (parse attempt ${attempt + 1})`, e);
+        logApiError(
+          `POST /api/ai/generate-worksheet (parse attempt ${attempt + 1})`,
+          e,
+        );
+        lastValidationDetails = {
+          parserError: e instanceof Error ? e.message : String(e),
+        };
         continue;
       }
     }
 
-    return apiJsonError('Could not produce valid worksheet JSON', 422);
+    return apiJsonError('Could not produce valid worksheet JSON', 422, {
+      validation: lastValidationDetails,
+      modelOutputPreview: lastModelOutputPreview,
+    });
   });
 }
