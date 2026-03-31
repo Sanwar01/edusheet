@@ -1,60 +1,91 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { BookOpen } from 'lucide-react';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 export default function SignInPage() {
   const router = useRouter();
+  const supabase = createSupabaseBrowserClient();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  async function handleSignIn(e: React.FormEvent) {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
-    const supabase = createSupabaseBrowserClient();
-
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-
-    if (signInError) {
-      setError(signInError.message);
-      return;
-    }
-
-    router.push('/dashboard');
-    router.refresh();
-  }
-
-  async function handleMagicLink() {
-    setLoading(true);
-    setError(null);
-    const supabase = createSupabaseBrowserClient();
-    const { error: magicError } = await supabase.auth.signInWithOtp({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-      },
+      password,
     });
     setLoading(false);
-    if (magicError) setError(magicError.message);
-  }
+    if (error) {
+      toast.error(error.message);
+    } else {
+      router.push('/dashboard');
+    }
+  };
 
   return (
-    <main className='mx-auto max-w-md px-6 py-16'>
-      <h1 className='text-3xl font-bold'>Sign in</h1>
-      <form onSubmit={handleSignIn} className='mt-6 space-y-3'>
-        <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder='Email' type='email' required />
-        <Input value={password} onChange={(e) => setPassword(e.target.value)} placeholder='Password' type='password' required />
-        {error && <p className='text-sm text-red-600'>{error}</p>}
-        <Button type='submit' disabled={loading}>{loading ? 'Signing in...' : 'Sign in'}</Button>
-        <Button type='button' variant='outline' disabled={loading || !email} onClick={handleMagicLink}>Send magic link</Button>
-      </form>
-    </main>
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="w-full max-w-sm">
+        <Link
+          href="/"
+          className="mb-8 flex items-center justify-center gap-2 font-display text-xl font-bold text-foreground"
+        >
+          <BookOpen className="h-6 w-6 text-primary" /> EduSheet AI
+        </Link>
+        <div className="rounded-xl border bg-card p-6 shadow-sm">
+          <h1 className="font-display text-2xl font-bold text-card-foreground">
+            Welcome back
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Sign in to your account
+          </p>
+          <form onSubmit={handleSignIn} className="mt-6 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@school.edu"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Signing in…' : 'Sign In'}
+            </Button>
+          </form>
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            Don't have an account?{' '}
+            <Link
+              href="/sign-up"
+              className="font-medium text-primary hover:underline"
+            >
+              Sign up
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
