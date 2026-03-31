@@ -3,7 +3,8 @@ export type QuestionType =
   | 'multiple_choice'
   | 'true_false'
   | 'fill_in_blank'
-  | 'matching';
+  | 'matching'
+  | 'essay';
 
 export interface Worksheet {
   id: string;

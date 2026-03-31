@@ -9,6 +9,7 @@ export const QuestionSchema = z.object({
     'true_false',
     'fill_in_blank',
     'matching',
+    'essay',
   ]),
   options: z.array(z.string()).optional().default([]),
   answer: z.string().optional(),

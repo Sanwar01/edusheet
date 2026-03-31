@@ -5,18 +5,40 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
+import { Loader2, Sparkles, FilePlus } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { GRADE_LEVELS, QUESTION_TYPES, SUBJECTS } from '@/constants';
 
 export default function NewWorksheetPage() {
   const router = useRouter();
-  const [topic, setTopic] = useState('Fractions');
-  const [subject, setSubject] = useState('Math');
+  const [topic, setTopic] = useState('');
+  const [subject, setSubject] = useState('');
   const [gradeLevel, setGradeLevel] = useState('5');
-  const [questionTypes, setQuestionTypes] = useState('short_answer,multiple_choice');
-  const [numberOfQuestions, setNumberOfQuestions] = useState(8);
-  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | 'mixed'>('mixed');
+  const [questionTypes, setQuestionTypes] = useState<string[]>([
+    'multiple_choice',
+    'short_answer',
+  ]);
+  const [numQuestions, setNumQuestions] = useState(5);
+  const [difficulty, setDifficulty] = useState<
+    'easy' | 'medium' | 'hard' | 'mixed'
+  >('mixed');
   const [additionalInstructions, setAdditionalInstructions] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const toggleType = (val: string) => {
+    setQuestionTypes((prev) =>
+      prev.includes(val) ? prev.filter((t) => t !== val) : [...prev, val],
+    );
+  };
 
   async function handleGenerate() {
     setLoading(true);
@@ -28,8 +50,8 @@ export default function NewWorksheetPage() {
         topic,
         subject,
         gradeLevel,
-        numberOfQuestions,
-        questionTypes: questionTypes.split(',').map((s) => s.trim()),
+        numQuestions,
+        questionTypes,
         difficulty,
         additionalInstructions,
       }),
@@ -46,23 +68,180 @@ export default function NewWorksheetPage() {
     router.push(`/dashboard/worksheets/${json.worksheetId}/edit`);
   }
 
+  // Quick create without AI
+  const handleBlankCreate = async () => {
+    // const { data, error } = await supabase
+    //   .from('worksheets')
+    //   .insert({
+    //     user_id: user!.id,
+    //     title: topic || 'Untitled Worksheet',
+    //     subject,
+    //     grade_level: gradeLevel,
+    //     content_json: {
+    //       title: topic || 'Untitled Worksheet',
+    //       instructions: '',
+    //       sections: [],
+    //     } as any,
+    //   })
+    //   .select()
+    //   .single();
+    // if (!error && data) {
+    //   router.push(`/dashboard/worksheets/${data.id}`);
+    // }
+  };
+
   return (
-    <main className='mx-auto max-w-2xl space-y-4 p-6'>
-      <h1 className='text-2xl font-semibold'>Generate new worksheet</h1>
-      <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder='Topic' />
-      <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder='Subject' />
-      <Input value={gradeLevel} onChange={(e) => setGradeLevel(e.target.value)} placeholder='Grade level' />
-      <Input
-        value={numberOfQuestions}
-        onChange={(e) => setNumberOfQuestions(Number(e.target.value))}
-        type='number'
-        placeholder='Number of questions'
-      />
-      <Input value={questionTypes} onChange={(e) => setQuestionTypes(e.target.value)} placeholder='Question types (comma separated)' />
-      <Input value={difficulty} onChange={(e) => setDifficulty(e.target.value as 'easy' | 'medium' | 'hard' | 'mixed')} placeholder='Difficulty' />
-      <Textarea value={additionalInstructions} onChange={(e) => setAdditionalInstructions(e.target.value)} placeholder='Additional instructions' />
-      {error && <p className='text-sm text-red-600'>{error}</p>}
-      <Button onClick={handleGenerate} disabled={loading}>{loading ? 'Generating...' : 'Generate worksheet'}</Button>
-    </main>
+    <div className="min-h-screen bg-background">
+      <main className="container max-w-4xl py-8">
+        <div className="flex flex-row gap-2 justify-between items-center">
+          <div className="flex flex-col gap-2 items-start">
+            <h1 className="font-display text-2xl font-bold text-foreground">
+              Create a new worksheet
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Let AI do the heavy lifting, or start from scratch.
+            </p>
+          </div>
+          <Button variant="outline" onClick={handleBlankCreate}>
+            <FilePlus className="h-4 w-4" />
+            Start Blank
+          </Button>
+        </div>
+
+        <div className="rounded-xl border bg-card p-6 shadow-sm mt-6">
+          <h1 className="font-display text-xl font-bold text-card-foreground">
+            Generate with AI
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Fill in the details and let AI create your worksheet.
+          </p>
+
+          <div className="mt-6 space-y-5">
+            <div className="space-y-2">
+              <Label>Topic *</Label>
+              <Input
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                placeholder="e.g. Photosynthesis, Fractions, World War II"
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Subject</Label>
+                <Select onValueChange={(v) => setSubject(v)}>
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Select subject" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUBJECTS.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Grade Level</Label>
+                <Select onValueChange={(v) => setGradeLevel(v)}>
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Select grade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {GRADE_LEVELS.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Number of Questions</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={30}
+                  value={numQuestions}
+                  onChange={(e) => setNumQuestions(Number(e.target.value))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Difficulty</Label>
+                <Select
+                  defaultValue="medium"
+                  onValueChange={(v: 'easy' | 'medium' | 'hard' | 'mixed') =>
+                    setDifficulty(v)
+                  }
+                >
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Select difficulty" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="easy">Easy</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="hard">Hard</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Question Types</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {QUESTION_TYPES.map((qt) => (
+                  <label
+                    key={qt.id}
+                    className="flex items-center gap-2 cursor-pointer p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                  >
+                    <Checkbox
+                      checked={questionTypes.includes(qt.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked)
+                          setQuestionTypes([...questionTypes, qt.id]);
+                        else
+                          setQuestionTypes(
+                            questionTypes.filter((t) => t !== qt.id),
+                          );
+                      }}
+                    />
+                    <span className="text-sm font-medium">{qt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2 border-t">
+              <Label>Additional Instructions (optional)</Label>
+              <Textarea
+                value={additionalInstructions}
+                onChange={(e) => setAdditionalInstructions(e.target.value)}
+                placeholder="e.g. Include a bonus question, make it fun and engaging, focus on vocabulary..."
+                rows={3}
+              />
+            </div>
+
+            <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+              <Button
+                className="flex-1 gap-2"
+                onClick={handleGenerate}
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                {loading ? 'Generating…' : 'Generate with AI'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
   );
 }

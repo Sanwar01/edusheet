@@ -29,7 +29,7 @@ Critical rules:
         {
           "id": "string",
           "prompt": "string",
-          "question_type": "short_answer|multiple_choice|true_false|fill_in_blank|matching",
+          "question_type": "short_answer|multiple_choice|true_false|fill_in_blank|matching|essay",
           "options": ["string"],
           "answer": "string",
           "points": 1
