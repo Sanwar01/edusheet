@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
-export function ExportPdfButton({ worksheetId }: { worksheetId: string }) {
+export const ExportPdfButton = ({ worksheetId }: { worksheetId: string }) => {
   const [loading, setLoading] = useState(false);
 
-  async function exportPdf() {
+  const exportPdf = async () => {
     setLoading(true);
     const res = await fetch('/api/exports/pdf', {
       method: 'POST',
@@ -29,11 +29,11 @@ export function ExportPdfButton({ worksheetId }: { worksheetId: string }) {
     a.remove();
     URL.revokeObjectURL(url);
     setLoading(false);
-  }
+  };
 
   return (
-    <Button variant='outline' onClick={exportPdf} disabled={loading}>
+    <Button variant="outline" onClick={exportPdf} disabled={loading}>
       {loading ? 'Exporting...' : 'Export PDF'}
     </Button>
   );
-}
+};

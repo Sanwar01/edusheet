@@ -11,18 +11,22 @@ import {
 
 import { MoreHorizontal, Copy, Trash2 } from 'lucide-react';
 
-export function WorksheetRowActions({ worksheetId }: { worksheetId: string }) {
+export const WorksheetRowActions = ({
+  worksheetId,
+}: {
+  worksheetId: string;
+}) => {
   const router = useRouter();
 
-  async function duplicateWorksheet() {
+  const duplicateWorksheet = async () => {
     await fetch(`/api/worksheets/${worksheetId}/duplicate`, { method: 'POST' });
     router.refresh();
-  }
+  };
 
-  async function deleteWorksheet() {
+  const deleteWorksheet = async () => {
     await fetch(`/api/worksheets/${worksheetId}`, { method: 'DELETE' });
     router.refresh();
-  }
+  };
 
   return (
     <DropdownMenu>
@@ -48,4 +52,4 @@ export function WorksheetRowActions({ worksheetId }: { worksheetId: string }) {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+};

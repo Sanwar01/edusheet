@@ -19,7 +19,7 @@ export function WorksheetCard({ worksheet }: { worksheet: WorksheetCardData }) {
   return (
     <Card
       className="group cursor-pointer transition-shadow hover:shadow-md"
-      onClick={() => router.push(`/dashboard/worksheets/${worksheet.id}`)}
+      onClick={() => router.push(`/dashboard/worksheets/${worksheet.id}/edit`)}
     >
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
