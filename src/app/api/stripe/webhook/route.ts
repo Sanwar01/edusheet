@@ -4,9 +4,11 @@ import { getStripeClient } from '@/lib/stripe/client';
 import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { insertAuditLog } from '@/lib/audit';
 import { apiJsonError, handleUnknownError, logApiError, withApiErrorHandling } from '@/lib/api/errors';
+import { getServerEnv } from '@/lib/env';
 
 export async function POST(req: Request) {
   return withApiErrorHandling('POST /api/stripe/webhook', async () => {
+    const { STRIPE_WEBHOOK_SECRET } = getServerEnv();
     let supabaseAdmin;
     try {
       supabaseAdmin = getSupabaseAdminClient();
@@ -18,14 +20,14 @@ export async function POST(req: Request) {
     const signature = (await headers()).get('stripe-signature');
     if (!signature) return apiJsonError('Missing signature', 400);
 
-    if (!process.env.STRIPE_WEBHOOK_SECRET?.trim()) {
+    if (!STRIPE_WEBHOOK_SECRET?.trim()) {
       return apiJsonError('Webhook secret is not configured.', 503);
     }
 
     let event: Stripe.Event;
     try {
       const stripe = getStripeClient();
-      event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET);
+      event = stripe.webhooks.constructEvent(body, signature, STRIPE_WEBHOOK_SECRET);
     } catch {
       return apiJsonError('Invalid webhook signature', 400);
     }

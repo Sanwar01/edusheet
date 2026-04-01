@@ -1,4 +1,7 @@
+import 'server-only';
+
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { requireServerEnv } from '@/lib/env';
 
 let cached: GoogleGenerativeAI | null = null;
 
@@ -7,7 +10,7 @@ let cached: GoogleGenerativeAI | null = null;
  * Mirrors the pattern used for OpenAI in `lib/openai/client.ts`.
  */
 export function getGoogleGenerativeAI(): GoogleGenerativeAI {
-  const key = process.env.GEMINI_API_KEY?.trim();
+  const key = requireServerEnv('GEMINI_API_KEY').trim();
   if (!key) {
     throw new Error('GEMINI_API_KEY is not configured');
   }

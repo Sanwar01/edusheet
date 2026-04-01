@@ -1,4 +1,5 @@
 import type { WorksheetContent, WorksheetLayout, WorksheetTheme } from '@/types/worksheet';
+import { buildWorksheetLayout } from '@/features/worksheets/layout';
 
 export const defaultTheme: WorksheetTheme = {
   headingFontSize: 28,
@@ -32,11 +33,5 @@ export function defaultContent(topic = 'New Topic'): WorksheetContent {
 }
 
 export function buildLayout(content: WorksheetContent): WorksheetLayout {
-  return {
-    sectionOrder: content.sections.map((section) => section.id),
-    questionOrderBySection: Object.fromEntries(
-      content.sections.map((section) => [section.id, section.questions.map((q) => q.id)]),
-    ),
-    spacingPreset: 'comfortable',
-  };
+  return buildWorksheetLayout(content, 'comfortable');
 }

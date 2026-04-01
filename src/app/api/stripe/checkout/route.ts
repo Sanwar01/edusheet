@@ -1,11 +1,13 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { getStripeClient } from '@/lib/stripe/client';
 import { apiJsonError, handleUnknownError, withApiErrorHandling } from '@/lib/api/errors';
+import { getServerEnv, publicEnv } from '@/lib/env';
 
 const TRIAL_DAYS = 7;
 
 export async function POST(req: Request) {
   return withApiErrorHandling('POST /api/stripe/checkout', async () => {
+    const { STRIPE_PRO_PRICE_ID } = getServerEnv();
     const supabase = await createSupabaseServerClient();
     const {
       data: { user },
@@ -13,7 +15,7 @@ export async function POST(req: Request) {
 
     if (!user?.email) return apiJsonError('Unauthorized', 401);
 
-    if (!process.env.STRIPE_PRO_PRICE_ID?.trim()) {
+    if (!STRIPE_PRO_PRICE_ID?.trim()) {
       return apiJsonError('Billing is not configured (missing STRIPE_PRO_PRICE_ID).', 503);
     }
 
@@ -47,9 +49,9 @@ export async function POST(req: Request) {
         mode: 'subscription',
         customer: sub?.stripe_customer_id ?? undefined,
         customer_email: sub?.stripe_customer_id ? undefined : user.email,
-        line_items: [{ price: process.env.STRIPE_PRO_PRICE_ID!, quantity: 1 }],
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?success=1`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?canceled=1`,
+        line_items: [{ price: STRIPE_PRO_PRICE_ID, quantity: 1 }],
+        success_url: `${publicEnv.NEXT_PUBLIC_APP_URL}/dashboard/billing?success=1`,
+        cancel_url: `${publicEnv.NEXT_PUBLIC_APP_URL}/dashboard/billing?canceled=1`,
         metadata: { user_id: user.id, flow: wantsTrial ? 'trial' : 'upgrade' },
         subscription_data: wantsTrial ? { trial_period_days: TRIAL_DAYS } : undefined,
       });

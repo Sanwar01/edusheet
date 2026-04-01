@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
+import { getServerEnv } from '@/lib/env';
 
-const isDev = process.env.NODE_ENV === 'development';
+const isDev = getServerEnv().NODE_ENV === 'development';
 
 /**
  * Consistent JSON error body for API routes: `{ error: string }` plus optional `details` in development.

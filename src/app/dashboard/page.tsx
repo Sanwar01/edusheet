@@ -2,47 +2,18 @@ import Link from 'next/link';
 import { BookOpen, FileDown, Plus, Sparkles } from 'lucide-react';
 import { requireUser } from '@/features/auth/guards';
 import { Button } from '@/components/ui/button';
-import { getMonthStartIso, isProPlan } from '@/features/billing/limits';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WorksheetCard } from '@/components/worksheets/worksheet-card';
 import { DashboardNavbar } from '@/components/dashboard/dashboard-navbar';
+import { getDashboardData } from '@/features/dashboard/server/get-dashboard-data';
 
 export default async function DashboardPage() {
   const { profile, user, supabase } = await requireUser();
-  const monthStart = getMonthStartIso();
-
-  const [subscriptionRes, worksheetsCount, aiMonthCount, exportsMonthCount, worksheetsRes] =
-    await Promise.all([
-      supabase
-        .from('subscriptions')
-        .select('plan,status')
-        .eq('user_id', user.id)
-        .maybeSingle(),
-      supabase
-        .from('worksheets')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id),
-      supabase
-        .from('ai_generations')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .gte('created_at', monthStart),
-      supabase
-        .from('exports')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .gte('created_at', monthStart),
-      supabase
-        .from('worksheets')
-        .select('id,title,subject,grade_level,status,updated_at')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false }),
-    ]);
-
-  const worksheets = worksheetsRes.data ?? [];
-  const isPro = isProPlan(subscriptionRes.data?.plan, subscriptionRes.data?.status);
-  const genLimit = isPro ? '∞' : `${aiMonthCount.count ?? 0}/10`;
-  const exportLimit = isPro ? '∞' : `${exportsMonthCount.count ?? 0}/5`;
+  const { worksheets, worksheetCount, generationUsage, exportUsage } =
+    await getDashboardData({
+      supabase,
+      userId: user.id,
+    });
 
   return (
     <>
@@ -75,7 +46,7 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold text-foreground">
-                {worksheetsCount.count ?? 0}
+                {worksheetCount}
               </p>
             </CardContent>
           </Card>
@@ -87,7 +58,7 @@ export default async function DashboardPage() {
               <Sparkles className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-foreground">{genLimit}</p>
+              <p className="text-2xl font-bold text-foreground">{generationUsage}</p>
             </CardContent>
           </Card>
           <Card>
@@ -99,7 +70,7 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold text-foreground">
-                {exportLimit}
+                {exportUsage}
               </p>
             </CardContent>
           </Card>

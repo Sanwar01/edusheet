@@ -1,5 +1,6 @@
 import type { GenerationConfig } from '@google/generative-ai';
 import { getGoogleGenerativeAI } from '@/lib/gemini/client';
+import { getServerEnv } from '@/lib/env';
 
 export type GeminiGenerateResult = {
   text: string;
@@ -39,7 +40,8 @@ export function getGeminiRetryDelaySeconds(error: unknown): number | null {
 }
 
 export function getDefaultGeminiModelName(): string {
-  return process.env.GEMINI_MODEL ?? 'gemini-2.0-flash';
+  const { GEMINI_MODEL } = getServerEnv();
+  return GEMINI_MODEL;
 }
 
 async function generateWithConfig(

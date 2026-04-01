@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   DndContext,
   PointerSensor,
@@ -29,13 +28,8 @@ import type {
 } from '@/types/worksheet';
 import { EditorToolbar } from './editor-toolbar';
 import { WorksheetSectionCard } from './worksheet-section-card';
-import {
-  buildLayoutPayload,
-  newId,
-} from '@/components/worksheets/editor-shell.helpers';
+import { newId } from '@/components/worksheets/editor-shell.helpers';
 import { ThemeSettingsSidebar } from './theme-settings-sidebar';
-import { toast } from 'sonner';
-import { fetchJson, getApiErrorMessage } from '@/lib/api/client';
 import { WorksheetContentSchema } from '@/lib/validators/worksheet';
 import { LeftEditorSidebar } from '@/components/worksheets/left-editor-sidebar';
 import {
@@ -43,26 +37,19 @@ import {
   PALETTE_DRAG_MIME,
   type PaletteItemType,
 } from '@/components/worksheets/editor-dnd-types';
-
-const fontFamilyClassMap: Record<WorksheetTheme['fontFamily'], string> = {
-  inter: 'font-sans',
-  lora: 'font-serif',
-  nunito: 'font-sans',
-};
-
-const sectionSpacingClassMap: Record<WorksheetTheme['spacingPreset'], string> =
-  {
-    compact: 'space-y-2',
-    comfortable: 'space-y-4',
-    spacious: 'space-y-6',
-  };
-
-const questionSpacingClassMap: Record<WorksheetTheme['spacingPreset'], string> =
-  {
-    compact: 'space-y-1',
-    comfortable: 'space-y-2',
-    spacious: 'space-y-4',
-  };
+import {
+  fontFamilyClassMap,
+  questionSpacingClassMap,
+  sectionSpacingClassMap,
+} from '@/features/worksheets/editor/theme/class-maps';
+import {
+  getCompletion,
+  getPointsBySection,
+  getPointsTotal,
+  isWorksheetBlank,
+} from '@/features/worksheets/editor/selectors/editor-selectors';
+import { useEditorLifecycle } from '@/features/worksheets/editor/hooks/use-editor-lifecycle';
+import { useWorksheetPersistence } from '@/features/worksheets/editor/hooks/use-worksheet-persistence';
 
 type EditorSnapshot = {
   content: WorksheetContent;
@@ -85,7 +72,6 @@ export const EditorShell = ({
   initialContent: WorksheetContent;
   initialTheme: WorksheetTheme;
 }) => {
-  const router = useRouter();
   const [resolvedWorksheetId, setResolvedWorksheetId] = useState<string | null>(
     worksheetId ?? null,
   );
@@ -103,14 +89,7 @@ export const EditorShell = ({
     Record<string, boolean>
   >({});
   const [mode, setMode] = useState<'edit' | 'preview'>('edit');
-  const [isSaving, setIsSaving] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
-  const [saveState, setSaveState] = useState<'idle' | 'saved' | 'error'>(
-    'idle',
-  );
-  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const autosaveRetryRef = useRef(0);
   const restoringHistoryRef = useRef(false);
   const [history, setHistory] = useState<EditorHistory>({
     past: [],
@@ -125,53 +104,17 @@ export const EditorShell = ({
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
 
-  const completion = useMemo(() => {
-    const hasTitle = content.title.trim().length > 0;
-    const hasInstructions = (content.instructions || '').trim().length > 0;
-    const hasSection = content.sections.length > 0;
-    const questionCount = content.sections.reduce(
-      (sum, s) => sum + s.questions.length,
-      0,
-    );
-    const hasQuestions = questionCount > 0;
-
-    const doneCount = [
-      hasTitle,
-      hasInstructions,
-      hasSection,
-      hasQuestions,
-    ].filter(Boolean).length;
-
-    return {
-      hasTitle,
-      hasInstructions,
-      hasSection,
-      hasQuestions,
-      questionCount,
-      doneCount,
-    };
-  }, [content]);
-
+  const completion = useMemo(() => getCompletion(content), [content]);
   const isBlankWorksheet = useMemo(
-    () => content.sections.length === 0 && completion.questionCount === 0,
-    [content.sections.length, completion.questionCount],
+    () => isWorksheetBlank(content) && completion.questionCount === 0,
+    [completion.questionCount, content],
   );
   const contentFontClass = fontFamilyClassMap[theme.fontFamily];
   const sectionSpacingClass = sectionSpacingClassMap[theme.spacingPreset];
   const questionSpacingClass = questionSpacingClassMap[theme.spacingPreset];
-  const pointsBySection = useMemo(
-    () =>
-      Object.fromEntries(
-        content.sections.map((section) => [
-          section.id,
-          section.questions.reduce((sum, q) => sum + (q.points ?? 0), 0),
-        ]),
-      ),
-    [content.sections],
-  );
+  const pointsBySection = useMemo(() => getPointsBySection(content), [content]);
   const pointsTotal = useMemo(
-    () =>
-      Object.values(pointsBySection).reduce((sum, points) => sum + points, 0),
+    () => getPointsTotal(pointsBySection),
     [pointsBySection],
   );
 
@@ -217,7 +160,6 @@ export const EditorShell = ({
     setTheme(snapshot.theme);
     setSectionCollapsed(snapshot.sectionCollapsed);
     setShowAnswerKey(snapshot.showAnswerKey);
-    setSaveState('idle');
     setIsDirty(true);
     setTimeout(() => {
       restoringHistoryRef.current = false;
@@ -252,7 +194,6 @@ export const EditorShell = ({
 
   const markDirty = () => {
     setIsDirty(true);
-    setSaveState('idle');
   };
 
   const setContentWithHistory = useCallback(
@@ -458,236 +399,25 @@ export const EditorShell = ({
     setSectionCollapsed((prev) => ({ ...prev, [sectionId]: false }));
   };
 
-  const focusNode = useCallback((nodeId: string) => {
-    setSelectedNodeId(nodeId);
-    const el = document.getElementById(nodeId);
-    if (!el) return;
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
-      el.focus();
-    }
-  }, []);
-
-  const saveDraft = useCallback(
-    async ({ silent = false }: { silent?: boolean } = {}) => {
-      if (isSaving) return;
-      if (!content.title.trim()) {
-        if (!silent) {
-          toast.error('Please add a worksheet title before saving.');
-          setSaveState('error');
-        }
-        return;
-      }
-      const validationError = validateContentForSave();
-      if (validationError) {
-        if (!silent) {
-          toast.error(validationError);
-          setSaveState('error');
-        }
-        return;
-      }
-
-      try {
-        setIsSaving(true);
-        setSaveState('idle');
-
-        const layout = buildLayoutPayload(content, theme.spacingPreset);
-        let res: Response;
-        if (resolvedWorksheetId) {
-          res = await fetch(`/api/worksheets/${resolvedWorksheetId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              title: content.title,
-              content_json: content,
-              layout_json: layout,
-              theme_json: theme,
-            }),
-          });
-        } else {
-          const created = await fetchJson<{ data: { id: string } }>(
-            '/api/worksheets',
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                title: content.title,
-                subject: 'General',
-                grade_level: '5',
-                content_json: content,
-                layout_json: layout,
-                theme_json: theme,
-              }),
-            },
-            'Failed to create worksheet.',
-          );
-          setResolvedWorksheetId(created.data.id);
-          router.replace(`/dashboard/worksheets/${created.data.id}/edit`);
-          setSaveState('saved');
-          setIsDirty(false);
-          if (!silent) {
-            toast.success('Worksheet created');
-          }
-          return;
-        }
-
-        if (!res.ok) {
-          throw new Error(
-            await getApiErrorMessage(res, 'Failed to save worksheet.'),
-          );
-        }
-
-        setSaveState('saved');
-        setIsDirty(false);
-        autosaveRetryRef.current = 0;
-        if (!silent) {
-          toast.success('Worksheet saved');
-        }
-      } catch (error) {
-        setSaveState('error');
-        if (silent && autosaveRetryRef.current < 2) {
-          autosaveRetryRef.current += 1;
-          setTimeout(() => {
-            void saveDraft({ silent: true });
-          }, autosaveRetryRef.current * 1500);
-        }
-        if (!silent) {
-          toast.error('Save failed', {
-            description:
-              error instanceof Error
-                ? error.message
-                : 'Could not save your worksheet.',
-          });
-        }
-      } finally {
-        setIsSaving(false);
-      }
-    },
-    [
+  const { isSaving, isExporting, saveState, saveDraft, exportPdf } =
+    useWorksheetPersistence({
       content,
-      isSaving,
-      resolvedWorksheetId,
-      router,
       theme,
+      resolvedWorksheetId,
+      setResolvedWorksheetId: (id) => setResolvedWorksheetId(id),
+      isDirty,
+      setIsDirty: (next) => setIsDirty(next),
       validateContentForSave,
-    ],
-  );
+      showAnswerKey,
+    });
 
-  const exportPdf = async () => {
-    if (isExporting) return;
-    if (!resolvedWorksheetId) {
-      toast.error('Save your worksheet first before exporting.');
-      return;
-    }
-    if (!content.sections.length) {
-      toast.error('Add at least one section before exporting.');
-      return;
-    }
-    const validationError = validateContentForSave();
-    if (validationError) {
-      toast.error(validationError);
-      return;
-    }
-
-    try {
-      setIsExporting(true);
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        throw new Error('Please allow popups to export.');
-      }
-
-      const res = await fetch('/api/exports/pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          worksheetId: resolvedWorksheetId,
-          includeAnswerKey: showAnswerKey,
-        }),
-      });
-      if (!res.ok) {
-        printWindow.close();
-        throw new Error(await getApiErrorMessage(res, 'Failed to export PDF.'));
-      }
-
-      const payload = (await res.json()) as { html?: string };
-      if (!payload.html) {
-        printWindow.close();
-        throw new Error('Export HTML is missing.');
-      }
-
-      printWindow.document.open();
-      printWindow.document.write(payload.html);
-      printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
-
-      toast.success('PDF exported');
-    } catch (error) {
-      toast.error('Failed to export PDF', {
-        description: error instanceof Error ? error.message : 'Unknown error',
-      });
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      const isUndoShortcut =
-        (event.metaKey || event.ctrlKey) &&
-        !event.shiftKey &&
-        event.key.toLowerCase() === 'z';
-      if (isUndoShortcut) {
-        event.preventDefault();
-        undo();
-        return;
-      }
-      const isRedoShortcut =
-        (event.metaKey || event.ctrlKey) &&
-        ((event.shiftKey && event.key.toLowerCase() === 'z') ||
-          event.key.toLowerCase() === 'y');
-      if (isRedoShortcut) {
-        event.preventDefault();
-        redo();
-        return;
-      }
-      const isSaveShortcut =
-        (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's';
-      if (!isSaveShortcut) return;
-      event.preventDefault();
-      void saveDraft();
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [redo, saveDraft, undo]);
-
-  useEffect(() => {
-    if (!isDirty) return;
-    if (autosaveTimerRef.current) {
-      clearTimeout(autosaveTimerRef.current);
-    }
-    autosaveTimerRef.current = setTimeout(() => {
-      void saveDraft({ silent: true });
-    }, 1500);
-
-    return () => {
-      if (autosaveTimerRef.current) {
-        clearTimeout(autosaveTimerRef.current);
-      }
-    };
-  }, [content, theme, isDirty, resolvedWorksheetId, saveDraft]);
-
-  useEffect(() => {
-    const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!isDirty || isSaving) return;
-      event.preventDefault();
-      event.returnValue = '';
-    };
-
-    window.addEventListener('beforeunload', onBeforeUnload);
-    return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [isDirty, isSaving]);
+  const { focusNode } = useEditorLifecycle({
+    undo,
+    redo,
+    save: () => saveDraft(),
+    isDirty,
+    isSaving,
+  });
 
   return (
     <>
@@ -725,7 +455,7 @@ export const EditorShell = ({
                     [sectionId]: false,
                   }));
                 }
-                focusNode(nodeId);
+                focusNode(nodeId, setSelectedNodeId);
               }}
               onAddFromPalette={addFromPalette}
               onPaletteDragStateChange={setIsPaletteDragging}

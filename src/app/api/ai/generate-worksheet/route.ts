@@ -23,6 +23,7 @@ import {
   logApiError,
   withApiErrorHandling,
 } from '@/lib/api/errors';
+import { getServerEnv } from '@/lib/env';
 
 const AI_GEN_PER_MINUTE = 3;
 const MODEL_OUTPUT_PREVIEW_LENGTH = 1200;
@@ -109,7 +110,8 @@ async function generateOnce(
   }
 
   const openai = getOpenAIClient();
-  const modelName = process.env.OPENAI_MODEL ?? 'gpt-4.1-mini';
+  const { OPENAI_MODEL } = getServerEnv();
+  const modelName = OPENAI_MODEL;
   const completion = await openai.responses.create({
     model: modelName,
     input: prompt,
@@ -128,6 +130,7 @@ async function generateOnce(
 
 export async function POST(req: Request) {
   return withApiErrorHandling('POST /api/ai/generate-worksheet', async () => {
+    const { GEMINI_API_KEY, OPENAI_API_KEY } = getServerEnv();
     const supabase = await createSupabaseServerClient();
     const {
       data: { user },
@@ -142,13 +145,13 @@ export async function POST(req: Request) {
     }
 
     const provider = getWorksheetAiProvider();
-    if (provider === 'gemini' && !process.env.GEMINI_API_KEY?.trim()) {
+    if (provider === 'gemini' && !GEMINI_API_KEY?.trim()) {
       return apiJsonError(
         'Worksheet AI is set to Gemini but GEMINI_API_KEY is missing.',
         503,
       );
     }
-    if (provider === 'openai' && !process.env.OPENAI_API_KEY?.trim()) {
+    if (provider === 'openai' && !OPENAI_API_KEY?.trim()) {
       return apiJsonError(
         'Worksheet AI is set to OpenAI but OPENAI_API_KEY is missing.',
         503,

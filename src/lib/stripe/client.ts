@@ -1,7 +1,10 @@
+import 'server-only';
+
 import Stripe from 'stripe';
+import { requireServerEnv } from '@/lib/env';
 
 export function getStripeClient() {
-  const key = process.env.STRIPE_SECRET_KEY;
+  const key = requireServerEnv('STRIPE_SECRET_KEY');
   if (!key) {
     throw new Error('STRIPE_SECRET_KEY is not configured');
   }

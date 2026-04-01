@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/features/auth/guards';
 import { EditorShell } from '@/components/worksheets/editor-shell';
-import type { WorksheetContent, WorksheetTheme } from '@/types/worksheet';
+import { ThemeSchema, WorksheetContentSchema } from '@/lib/validators/worksheet';
 
 export default async function WorksheetEditorPage({
   params,
@@ -19,12 +19,15 @@ export default async function WorksheetEditorPage({
     .single();
 
   if (error || !worksheet) return notFound();
+  const parsedContent = WorksheetContentSchema.safeParse(worksheet.content_json);
+  const parsedTheme = ThemeSchema.safeParse(worksheet.theme_json);
+  if (!parsedContent.success || !parsedTheme.success) return notFound();
 
   return (
     <EditorShell
       worksheetId={worksheet.id}
-      initialContent={worksheet.content_json as WorksheetContent}
-      initialTheme={worksheet.theme_json as WorksheetTheme}
+      initialContent={parsedContent.data}
+      initialTheme={parsedTheme.data}
     />
   );
 }
