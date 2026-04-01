@@ -1,6 +1,6 @@
 export const FREE_PLAN_LIMITS = {
   generationsPerMonth: 10,
-  exportsPerMonth: 5,
+  exportsPerMonth: 8,
 } as const;
 
 export function isProPlan(plan?: string | null, status?: string | null) {

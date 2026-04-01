@@ -8,6 +8,7 @@ import {
   generateWorksheetTextWithGemini,
   getGeminiRetryDelaySeconds,
   isGeminiRateLimitError,
+  isGeminiTemporaryUnavailable,
 } from '@/lib/gemini/generate-worksheet';
 import { parseModelJsonOutput } from '@/lib/ai/parse-model-json';
 import { buildLayout, defaultTheme } from '@/features/worksheets/defaults';
@@ -34,6 +35,12 @@ type TokenUsage = {
   completionTokens: number | null;
   totalTokens: number | null;
 };
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
 
 function toShortId(prefix: 'sec' | 'q', value: unknown, fallbackIndex: number): string {
   const raw = typeof value === 'string' ? value.trim() : '';
@@ -207,10 +214,29 @@ export async function POST(req: Request) {
             { status: 429, headers: { 'Retry-After': String(retryAfter) } },
           );
         }
+        if (provider === 'gemini' && isGeminiTemporaryUnavailable(e)) {
+          const retryAfter = 20;
+          const isLastAttempt = attempt === 1;
+          if (!isLastAttempt) {
+            await sleep((attempt + 1) * 1500);
+            continue;
+          }
+          return Response.json(
+            {
+              error:
+                'Gemini is temporarily under high demand. Please retry in a moment.',
+              retryAfterSeconds: retryAfter,
+            },
+            { status: 503, headers: { 'Retry-After': String(retryAfter) } },
+          );
+        }
         logApiError(
           `POST /api/ai/generate-worksheet (attempt ${attempt + 1})`,
           e,
         );
+        if (attempt < 1) {
+          await sleep((attempt + 1) * 1500);
+        }
         continue;
       }
 
@@ -259,9 +285,10 @@ export async function POST(req: Request) {
             completion_tokens: gen.completionTokens,
             total_tokens: gen.totalTokens,
           });
-
         if (genInsertError) {
-          return apiJsonError(genInsertError.message, 500);
+          // Do not fail the user flow after worksheet creation.
+          // Logging/analytics failure should not block redirect to editor.
+          logApiError('POST /api/ai/generate-worksheet (ai_generations)', genInsertError);
         }
 
         try {

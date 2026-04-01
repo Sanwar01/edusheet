@@ -24,6 +24,19 @@ export function isGeminiRateLimitError(error: unknown): boolean {
   return message.includes('429') || message.includes('quota exceeded') || message.includes('too many requests');
 }
 
+export function isGeminiTemporaryUnavailable(error: unknown): boolean {
+  const e = error as GeminiErrorWithMeta;
+  if (!e) return false;
+  if (e.status === 503) return true;
+  const message = (e.message ?? '').toLowerCase();
+  return (
+    message.includes('503') ||
+    message.includes('service unavailable') ||
+    message.includes('high demand') ||
+    message.includes('temporarily unavailable')
+  );
+}
+
 export function getGeminiRetryDelaySeconds(error: unknown): number | null {
   const e = error as GeminiErrorWithMeta;
   const retry = e?.errorDetails?.find((d) => d?.['@type']?.includes('RetryInfo'))?.retryDelay;
