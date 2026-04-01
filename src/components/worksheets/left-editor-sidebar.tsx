@@ -28,8 +28,8 @@ export function LeftEditorSidebar({
   onClose?: () => void;
 }) {
   return (
-    <aside className="hidden h-full w-72 shrink-0 border-r border-slate-200 bg-white lg:block">
-      <div className="border-b border-slate-200 p-3">
+    <aside className="hidden min-h-0 flex-1 flex-col border-r border-slate-200 bg-white lg:flex">
+      <div className="shrink-0 border-b border-slate-200 p-3">
         <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
           <div className="flex items-center justify-between gap-2">
             <span>Worksheet panel</span>
@@ -66,7 +66,7 @@ export function LeftEditorSidebar({
         </div>
       </div>
 
-      <div className="h-[calc(100%-84px)] overflow-auto p-3">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-3">
         {tab === 'structure' ? (
           <div className="space-y-3">
             <button

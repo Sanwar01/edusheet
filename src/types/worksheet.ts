@@ -74,6 +74,6 @@ export interface WorksheetTheme {
   optionLayout: 'vertical' | 'horizontal';
   /** Weight for question prompts in preview & export. */
   promptFontWeight: 'normal' | 'medium' | 'semibold';
-  /** Muted color for options, answer lines, and secondary labels. */
+  /** Muted color for options, answer lines, response boxes, instructions, and labels in preview & export. */
   answerTextColor: string;
 }

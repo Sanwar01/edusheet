@@ -78,9 +78,9 @@ export const SortableQuestionShell = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="rounded border border-slate-100 bg-slate-50/60 p-2"
+      className="max-w-full rounded border border-slate-100 bg-slate-50/60 p-2"
     >
-      <div className="flex gap-2">
+      <div className="flex min-w-0 gap-2">
         <button
           type="button"
           className="mt-1 h-8 shrink-0 cursor-grab rounded border border-slate-200 bg-white px-1.5 text-xs text-slate-600 active:cursor-grabbing"

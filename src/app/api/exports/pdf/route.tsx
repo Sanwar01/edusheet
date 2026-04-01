@@ -162,7 +162,7 @@ function buildPrintableHtml({
       <h1 class="lesson-title">${safeTitle}</h1>
       ${
         theme.showNameLine
-          ? `<div class="name-line" style="color:${theme.textColor}">Name: <span class="name-rule"></span></div>`
+          ? `<div class="name-line" style="color:${theme.answerTextColor}">Name: <span class="name-rule" style="border-bottom-color:${theme.answerTextColor}"></span></div>`
           : ''
       }
     </div>`
@@ -209,7 +209,7 @@ function buildPrintableHtml({
             : `<div class="section-stack">${questionsHtml}</div>`;
 
       return `
-        <h2>Section ${sectionIndex + 1}: ${safeHeading || 'Untitled section'} <span class="section-points">(${sectionPoints} pts)</span></h2>
+        <h2 style="color:${theme.textColor}">Section ${sectionIndex + 1}: ${safeHeading || 'Untitled section'} <span class="section-points" style="color:${theme.answerTextColor}">(${sectionPoints} pts)</span></h2>
         ${gridWrapper}
       `;
     })
@@ -234,9 +234,9 @@ function buildPrintableHtml({
       .lesson-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; margin-bottom: 8px; }
       .lesson-title { font-size: ${theme.headingFontSize}px; color: ${theme.primaryColor}; margin: 0; flex: 1; min-width: 200px; }
       .name-line { font-size: ${Math.max(theme.bodyFontSize - 1, 12)}px; white-space: nowrap; }
-      .name-rule { display: inline-block; min-width: 180px; border-bottom: 1px solid #94a3b8; margin-left: 4px; }
+      .name-rule { display: inline-block; min-width: 180px; border-bottom: 1px solid; margin-left: 4px; }
       h2 { font-size: ${Math.max(theme.headingFontSize - 4, 16)}px; margin-top: ${spacing}px; border-bottom: 2px solid ${theme.primaryColor}; padding-bottom: 4px; }
-      .instructions { font-style: italic; color: #666; margin-bottom: ${spacing}px; white-space: pre-wrap; }
+      .instructions { font-style: italic; color: ${theme.answerTextColor}; margin-bottom: ${spacing}px; white-space: pre-wrap; }
       .meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: ${spacing}px; font-size: 12px; color: #4b5563; border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px 10px; background: #f8fafc; }
       .question { margin: ${spacing}px 0; font-size: ${theme.bodyFontSize}px; }
       .section-stack .question { margin: ${spacing}px 0; }
@@ -255,8 +255,8 @@ function buildPrintableHtml({
       .opt-letter { font-size: 12px; font-weight: 700; }
       .opt-text { font-size: 14px; }
       .tf-row { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; margin-top: 8px; }
-      .tf-box { display: inline-block; width: 14px; height: 14px; border: 1px solid #64748b; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
-      .section-points { font-size: 12px; color: #6b7280; font-weight: 500; }
+      .tf-box { display: inline-block; width: 14px; height: 14px; border: 1px solid; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+      .section-points { font-size: 12px; font-weight: 500; }
       .answer-key { margin-top: 6px; font-size: 12px; color: #374151; background: #f1f5f9; border-radius: 4px; padding: 4px 8px; }
       .line-answer { border-bottom: 1px solid #999; width: 200px; height: 20px; margin-top: 4px; }
       .boxed-answer { border: 1px solid #ddd; margin-top: 4px; border-radius: 4px; }

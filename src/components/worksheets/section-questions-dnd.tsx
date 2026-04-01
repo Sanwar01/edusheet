@@ -33,6 +33,7 @@ import type {
   WorksheetQuestion,
 } from '@/types/worksheet';
 import { defaultSectionLayout } from '@/features/worksheets/layout';
+import { sectionQuestionGridColsClass } from '@/features/worksheets/section-grid-responsive';
 import { cn } from '@/lib/utils';
 import { SortableQuestionShell } from '@/components/worksheets/sortable-blocks';
 import { duplicateQuestion } from '@/components/worksheets/editor-shell.helpers';
@@ -124,13 +125,7 @@ export const SectionQuestionsDnd = ({
   );
 
   const isGrid = sectionLayout.mode === 'grid';
-  const gridCols = sectionLayout.gridColumns ?? 2;
-  const gridColsClass =
-    gridCols === 2
-      ? 'grid-cols-1 sm:grid-cols-2'
-      : gridCols === 3
-        ? 'grid-cols-1 sm:grid-cols-3'
-        : 'grid-cols-2 sm:grid-cols-4';
+  const gridColsClass = sectionQuestionGridColsClass(sectionLayout.gridColumns);
   const sortStrategy = isGrid
     ? rectSortingStrategy
     : verticalListSortingStrategy;
@@ -186,7 +181,9 @@ export const SectionQuestionsDnd = ({
           >
             <div
               className={cn(
-                isGrid ? `grid gap-2 ${gridColsClass}` : 'space-y-2.5',
+                isGrid
+                  ? `grid auto-rows-min gap-2 ${gridColsClass}`
+                  : 'space-y-2.5',
               )}
             >
             {section.questions.map((question, index) => (
@@ -194,6 +191,7 @@ export const SectionQuestionsDnd = ({
                 key={question.id}
                 className={cn(
                   'space-y-2',
+                  isGrid && 'min-w-0',
                   isGrid &&
                     sectionLayout.border === 'cells' &&
                     'rounded-md border border-slate-200 bg-white p-2',
@@ -222,15 +220,33 @@ export const SectionQuestionsDnd = ({
                     index,
                   }}
                 >
-              <div className="mb-1 flex items-center justify-between gap-2">
-                <p className="text-xs font-medium text-slate-500">
+              <div
+                className={cn(
+                  'mb-1 min-w-0',
+                  isGrid
+                    ? 'flex flex-col gap-2'
+                    : 'flex flex-row items-center justify-between gap-2',
+                )}
+              >
+                <p
+                  className={cn(
+                    'text-xs font-medium text-slate-500',
+                    !isGrid && 'shrink-0',
+                  )}
+                >
                   Question {questionStartNumber + index}
                 </p>
-                <div className="flex items-center gap-1">
+                <div
+                  className={cn(
+                    'flex min-w-0 flex-wrap items-center gap-2',
+                    !isGrid && 'justify-end',
+                    isGrid && 'w-full',
+                  )}
+                >
                   <Button
                     type="button"
                     variant="ghost"
-                    className="h-7 px-2 text-xs text-slate-600"
+                    className="h-7 shrink-0 px-2 text-xs text-slate-600"
                     onClick={() =>
                       setCollapsedByQuestionId((prev) => ({
                         ...prev,
@@ -260,7 +276,12 @@ export const SectionQuestionsDnd = ({
                       )
                     }
                   >
-                    <SelectTrigger className="h-7 w-[150px] bg-slate-100 text-xs">
+                    <SelectTrigger
+                      className={cn(
+                        'h-7 bg-slate-100 text-xs',
+                        isGrid ? 'min-w-0 w-full' : 'w-[150px]',
+                      )}
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -271,7 +292,7 @@ export const SectionQuestionsDnd = ({
                       ))}
                     </SelectContent>
                   </Select>
-                  <div className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                  <div className="flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
                     <span>Pts</span>
                     <input
                       type="number"
@@ -333,9 +354,9 @@ export const SectionQuestionsDnd = ({
                       {(question.options ?? []).map((option, optionIndex) => (
                         <div
                           key={`${question.id}_opt_${optionIndex}`}
-                          className="flex items-center gap-2"
+                          className="flex min-w-0 flex-wrap items-center gap-2"
                         >
-                          <span className="text-xs text-slate-500">
+                          <span className="shrink-0 text-xs text-slate-500">
                             {String.fromCharCode(65 + optionIndex)}.
                           </span>
                           <input
@@ -351,7 +372,7 @@ export const SectionQuestionsDnd = ({
                               )
                             }
                             placeholder={`Option ${optionIndex + 1}`}
-                            className="h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-sm outline-none focus:border-slate-300"
+                            className="h-8 min-w-0 flex-1 basis-32 rounded-md border border-slate-200 bg-white px-2 text-sm outline-none focus:border-slate-300"
                           />
                           {question.question_type === 'multiple_choice' && (
                             <Button
@@ -361,7 +382,7 @@ export const SectionQuestionsDnd = ({
                                   ? 'default'
                                   : 'outline'
                               }
-                              className="h-8 text-xs"
+                              className="h-8 shrink-0 text-xs"
                               onClick={() =>
                                 onChangeQuestions(
                                   section.questions.map((q) =>
@@ -378,7 +399,7 @@ export const SectionQuestionsDnd = ({
                           <Button
                             type="button"
                             variant="ghost"
-                            className="h-8 px-2 text-xs text-rose-600 hover:text-rose-700"
+                            className="h-8 shrink-0 px-2 text-xs text-rose-600 hover:text-rose-700"
                             disabled={
                               question.question_type === 'multiple_choice' &&
                               (question.options?.length ?? 0) <= 2

@@ -443,7 +443,7 @@ export const EditorShell = ({
 
       <div className="flex flex-1 bg-slate-50">
         {showWorksheetSidebar ? (
-          <div className="fixed top-16 left-0 bottom-0 z-40 hidden h-full w-72 border-r border-slate-200 lg:block">
+          <div className="fixed top-16 left-0 bottom-0 z-40 hidden w-72 flex-col overflow-hidden border-r border-slate-200 bg-white lg:flex">
             <LeftEditorSidebar
               tab={leftTab}
               setTab={setLeftTab}
@@ -501,7 +501,7 @@ export const EditorShell = ({
         </main>
 
         {showThemeSidebar ? (
-          <div className="fixed top-16 right-0 bottom-0 z-40 hidden h-full w-72 border-l border-slate-200 lg:block">
+          <div className="fixed top-16 right-0 bottom-0 z-40 hidden w-72 flex-col overflow-hidden border-l border-slate-200 bg-white lg:flex">
             <ThemeSettingsSidebar
               theme={theme}
               setTheme={setThemeWithHistory}

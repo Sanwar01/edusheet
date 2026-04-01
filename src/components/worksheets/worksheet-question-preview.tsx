@@ -66,7 +66,8 @@ export function WorksheetQuestionPreview({
               style={optMuted}
             >
               <span
-                className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border border-slate-400 bg-gradient-to-b from-white to-slate-100"
+                className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border bg-gradient-to-b from-white to-slate-100"
+                style={{ borderColor: theme.answerTextColor }}
                 aria-hidden
               />
               {label}
@@ -77,7 +78,10 @@ export function WorksheetQuestionPreview({
         <div className="mt-2 flex flex-col gap-1 text-sm" style={optMuted}>
           {['True', 'False'].map((label) => (
             <div key={label} className="flex items-center gap-2">
-              <span className="inline-flex h-3.5 w-3.5 rounded border border-slate-400" />
+              <span
+                className="inline-flex h-3.5 w-3.5 rounded border"
+                style={{ borderColor: theme.answerTextColor }}
+              />
               {label}
             </div>
           ))}
@@ -105,9 +109,10 @@ export function WorksheetQuestionPreview({
   const textBlock =
     question.question_type === 'short_answer' || question.question_type === 'essay' ? (
       <div
-        className={`mt-3 w-full rounded border border-slate-300 bg-white ${
+        className={`mt-3 w-full rounded border bg-white ${
           question.question_type === 'essay' ? 'min-h-[80px]' : 'min-h-[36px]'
         }`}
+        style={{ borderColor: theme.answerTextColor }}
       />
     ) : null;
 
