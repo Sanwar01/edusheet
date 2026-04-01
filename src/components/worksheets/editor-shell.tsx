@@ -27,6 +27,7 @@ import {
 import { ThemeSettingsSidebar } from './theme-settings-sidebar';
 import { toast } from 'sonner';
 import { fetchJson, getApiErrorMessage } from '@/lib/api/client';
+import { WorksheetContentSchema } from '@/lib/validators/worksheet';
 
 const fontFamilyClassMap: Record<WorksheetTheme['fontFamily'], string> = {
   inter: 'font-sans',
@@ -40,6 +41,12 @@ const sectionSpacingClassMap: Record<WorksheetTheme['spacingPreset'], string> =
     comfortable: 'space-y-4',
     spacious: 'space-y-6',
   };
+
+const questionSpacingClassMap: Record<WorksheetTheme['spacingPreset'], string> = {
+  compact: 'space-y-1',
+  comfortable: 'space-y-2',
+  spacious: 'space-y-4',
+};
 
 export const EditorShell = ({
   worksheetId,
@@ -57,6 +64,7 @@ export const EditorShell = ({
   const [content, setContent] = useState(initialContent);
   const [theme, setTheme] = useState(initialTheme);
   const [showThemeSidebar, setShowThemeSidebar] = useState(false);
+  const [mode, setMode] = useState<'edit' | 'preview'>('edit');
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
@@ -64,6 +72,7 @@ export const EditorShell = ({
     'idle',
   );
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autosaveRetryRef = useRef(0);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -102,11 +111,24 @@ export const EditorShell = ({
   );
   const contentFontClass = fontFamilyClassMap[theme.fontFamily];
   const sectionSpacingClass = sectionSpacingClassMap[theme.spacingPreset];
+  const questionSpacingClass = questionSpacingClassMap[theme.spacingPreset];
 
   const markDirty = () => {
     setIsDirty(true);
     setSaveState('idle');
   };
+
+  const validateContentForSave = useCallback(() => {
+    const result = WorksheetContentSchema.safeParse(content);
+    if (result.success) return null;
+    const flattened = result.error.flatten();
+    const fieldMessage =
+      flattened.fieldErrors.title?.[0] ??
+      flattened.fieldErrors.sections?.[0] ??
+      flattened.formErrors[0] ??
+      'Please fix worksheet validation errors before saving.';
+    return fieldMessage;
+  }, [content]);
 
   const updateSectionById = (
     sectionId: string,
@@ -177,6 +199,14 @@ export const EditorShell = ({
       }
       return;
     }
+    const validationError = validateContentForSave();
+    if (validationError) {
+      if (!silent) {
+        toast.error(validationError);
+        setSaveState('error');
+      }
+      return;
+    }
 
     try {
       setIsSaving(true);
@@ -230,11 +260,18 @@ export const EditorShell = ({
 
       setSaveState('saved');
       setIsDirty(false);
+      autosaveRetryRef.current = 0;
       if (!silent) {
         toast.success('Worksheet saved');
       }
     } catch (error) {
       setSaveState('error');
+      if (silent && autosaveRetryRef.current < 2) {
+        autosaveRetryRef.current += 1;
+        setTimeout(() => {
+          void saveDraft({ silent: true });
+        }, autosaveRetryRef.current * 1500);
+      }
       if (!silent) {
         toast.error('Save failed', {
           description:
@@ -246,7 +283,7 @@ export const EditorShell = ({
     } finally {
       setIsSaving(false);
     }
-  }, [content, isSaving, resolvedWorksheetId, router, theme]);
+  }, [content, isSaving, resolvedWorksheetId, router, theme, validateContentForSave]);
 
   const exportPdf = async () => {
     if (isExporting) return;
@@ -256,6 +293,11 @@ export const EditorShell = ({
     }
     if (!content.sections.length) {
       toast.error('Add at least one section before exporting.');
+      return;
+    }
+    const validationError = validateContentForSave();
+    if (validationError) {
+      toast.error(validationError);
       return;
     }
 
@@ -342,6 +384,8 @@ export const EditorShell = ({
     <>
       <EditorToolbar
         title={content.title}
+        mode={mode}
+        setMode={setMode}
         showThemeSidebar={showThemeSidebar}
         setShowThemeSidebar={setShowThemeSidebar}
         onSave={saveDraft}
@@ -354,6 +398,59 @@ export const EditorShell = ({
       <div className="flex flex-1 bg-slate-50">
         <main className="flex-1 overflow-auto p-4 md:p-8">
           <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 lg:flex-row lg:items-start">
+            {mode === 'preview' ? (
+              <div
+                className={`w-full rounded-lg border border-slate-200 bg-white px-6 py-8 shadow-sm md:px-10 ${contentFontClass}`}
+                style={{ color: theme.textColor, fontSize: theme.bodyFontSize }}
+              >
+                <h1
+                  className="mb-2 font-bold"
+                  style={{
+                    fontSize: theme.headingFontSize,
+                    color: theme.primaryColor,
+                  }}
+                >
+                  {content.title || 'Untitled worksheet'}
+                </h1>
+                {content.instructions ? (
+                  <p className="mb-6 italic text-slate-700">{content.instructions}</p>
+                ) : null}
+                <div className={sectionSpacingClass}>
+                  {content.sections.map((section, sectionIndex) => (
+                    <section key={section.id} className={questionSpacingClass}>
+                      <h2 className="font-semibold">
+                        Section {sectionIndex + 1}: {section.heading || 'Untitled section'}
+                      </h2>
+                      <ol className={`list-decimal pl-5 ${questionSpacingClass}`}>
+                        {section.questions.map((question) => (
+                          <li key={question.id} className="space-y-1">
+                            <p>{question.prompt || 'Untitled question'}</p>
+                            {question.question_type === 'multiple_choice' &&
+                              (question.options ?? []).length > 0 && (
+                                <ul className="list-disc pl-5 text-sm text-slate-700">
+                                  {(question.options ?? []).map((option, idx) => (
+                                    <li key={`${question.id}_${idx}`}>{option}</li>
+                                  ))}
+                                </ul>
+                              )}
+                            {(question.question_type === 'short_answer' ||
+                              question.question_type === 'essay') && (
+                              <div
+                                className={`rounded border border-slate-200 ${question.question_type === 'essay' ? 'h-20' : 'h-8'}`}
+                              />
+                            )}
+                            {question.question_type === 'fill_in_blank' && (
+                              <div className="h-6 w-52 border-b border-slate-400" />
+                            )}
+                          </li>
+                        ))}
+                      </ol>
+                    </section>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <>
             {isBlankWorksheet && (
               <aside className="w-full rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-24 lg:w-72">
                 <div className="mb-3 flex items-center gap-2">
@@ -505,6 +602,10 @@ export const EditorShell = ({
                               markDirty();
                             }}
                             onDeleteSection={() => {
+                              const confirmed = window.confirm(
+                                'Delete this section and all of its questions? This cannot be undone.',
+                              );
+                              if (!confirmed) return;
                               setContent((prev) => ({
                                 ...prev,
                                 sections: prev.sections.filter(
@@ -532,6 +633,8 @@ export const EditorShell = ({
                 <CirclePlus className="h-4 w-4" /> Add section
               </Button>
             </div>
+              </>
+            )}
           </div>
         </main>
 

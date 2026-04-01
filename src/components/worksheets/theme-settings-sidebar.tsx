@@ -3,6 +3,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -11,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { WorksheetTheme } from '@/types/worksheet';
+import { defaultTheme } from '@/features/worksheets/defaults';
 
 export const ThemeSettingsSidebar = ({
   theme,
@@ -28,6 +30,15 @@ export const ThemeSettingsSidebar = ({
           <p className="text-xs text-slate-500">Optional styling tweaks</p>
         </div>
       </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full text-xs"
+        onClick={() => setTheme(defaultTheme)}
+      >
+        Reset theme to default
+      </Button>
 
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-slate-600">

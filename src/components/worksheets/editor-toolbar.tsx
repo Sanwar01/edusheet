@@ -3,6 +3,8 @@
 import {
   ArrowLeft,
   CheckCircle2,
+  Eye,
+  FileEdit,
   FileDown,
   Loader2,
   Palette,
@@ -13,6 +15,8 @@ import { Button } from '../ui/button';
 
 interface EditorToolbarProps {
   title: string;
+  mode: 'edit' | 'preview';
+  setMode: (mode: 'edit' | 'preview') => void;
   showThemeSidebar: boolean;
   setShowThemeSidebar: (show: boolean) => void;
   onSave: () => Promise<void> | void;
@@ -24,6 +28,8 @@ interface EditorToolbarProps {
 
 export const EditorToolbar = ({
   title,
+  mode,
+  setMode,
   showThemeSidebar,
   setShowThemeSidebar,
   onSave,
@@ -53,6 +59,27 @@ export const EditorToolbar = ({
         </div>
 
         <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-1 rounded-md border border-slate-200 bg-white p-1 md:flex">
+            <Button
+              variant={mode === 'edit' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setMode('edit')}
+              className="h-7 gap-1 px-2 text-xs"
+            >
+              <FileEdit className="h-3.5 w-3.5" />
+              Edit
+            </Button>
+            <Button
+              variant={mode === 'preview' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setMode('preview')}
+              className="h-7 gap-1 px-2 text-xs"
+            >
+              <Eye className="h-3.5 w-3.5" />
+              Preview
+            </Button>
+          </div>
+
           <div className="hidden items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 md:flex">
             {isSaving ? (
               <>
