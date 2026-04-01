@@ -12,6 +12,11 @@ export const ExportPdfButton = ({ worksheetId }: { worksheetId: string }) => {
     if (loading) return;
     setLoading(true);
     try {
+      const printWindow = window.open('', '_blank', 'noopener,noreferrer');
+      if (!printWindow) {
+        throw new Error('Please allow popups to export.');
+      }
+
       const res = await fetch('/api/exports/pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -19,21 +24,21 @@ export const ExportPdfButton = ({ worksheetId }: { worksheetId: string }) => {
       });
 
       if (!res.ok) {
+        printWindow.close();
         throw new Error(await getApiErrorMessage(res, 'Failed to export PDF.'));
       }
 
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const opened = window.open(url, '_blank', 'noopener,noreferrer');
-      if (!opened) {
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${worksheetId}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
+      const payload = (await res.json()) as { html?: string };
+      if (!payload.html) {
+        printWindow.close();
+        throw new Error('Export HTML is missing.');
       }
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+
+      printWindow.document.open();
+      printWindow.document.write(payload.html);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
     } catch (error) {
       toast.error('Failed to export PDF', {
         description:
@@ -45,8 +50,11 @@ export const ExportPdfButton = ({ worksheetId }: { worksheetId: string }) => {
   };
 
   return (
-    <Button variant="outline" onClick={exportPdf} disabled={loading}>
-      {loading ? 'Exporting...' : 'Export PDF'}
-    </Button>
+    <div className="space-y-1">
+      <Button variant="outline" onClick={exportPdf} disabled={loading}>
+        {loading ? 'Exporting...' : 'Export PDF'}
+      </Button>
+      <p className="text-xs text-slate-500">Opens print dialog (Save as PDF)</p>
+    </div>
   );
 };

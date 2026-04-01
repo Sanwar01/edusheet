@@ -9,6 +9,8 @@ export function isProPlan(plan?: string | null, status?: string | null) {
 
 export function getMonthStartIso() {
   const now = new Date();
-  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const monthStart = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+  );
   return monthStart.toISOString();
 }

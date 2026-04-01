@@ -92,7 +92,6 @@ export const EditorToolbar = ({
             )}
             Export
           </Button>
-
           <Button
             size="sm"
             onClick={onSave}

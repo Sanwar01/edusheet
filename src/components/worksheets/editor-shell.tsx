@@ -244,14 +244,33 @@ export const EditorShell = ({
 
     try {
       setIsExporting(true);
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        throw new Error('Please allow popups to export.');
+      }
+
       const res = await fetch('/api/exports/pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ worksheetId: resolvedWorksheetId }),
       });
       if (!res.ok) {
+        printWindow.close();
         throw new Error(await getApiErrorMessage(res, 'Failed to export PDF.'));
       }
+
+      const payload = (await res.json()) as { html?: string };
+      if (!payload.html) {
+        printWindow.close();
+        throw new Error('Export HTML is missing.');
+      }
+
+      printWindow.document.open();
+      printWindow.document.write(payload.html);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+
       toast.success('PDF exported');
     } catch (error) {
       toast.error('Failed to export PDF', {
