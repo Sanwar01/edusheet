@@ -8,15 +8,24 @@ import {
   FileDown,
   Loader2,
   Palette,
+  Redo2,
   Save,
+  Undo2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '../ui/button';
 
 interface EditorToolbarProps {
   title: string;
+  pointsTotal: number;
   mode: 'edit' | 'preview';
   setMode: (mode: 'edit' | 'preview') => void;
+  showAnswerKey: boolean;
+  setShowAnswerKey: (next: boolean) => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
   showThemeSidebar: boolean;
   setShowThemeSidebar: (show: boolean) => void;
   onSave: () => Promise<void> | void;
@@ -28,8 +37,15 @@ interface EditorToolbarProps {
 
 export const EditorToolbar = ({
   title,
+  pointsTotal,
   mode,
   setMode,
+  showAnswerKey,
+  setShowAnswerKey,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
   showThemeSidebar,
   setShowThemeSidebar,
   onSave,
@@ -53,7 +69,7 @@ export const EditorToolbar = ({
               {title || 'Untitled worksheet'}
             </p>
             <p className="text-xs text-slate-500">
-              Simple mode: edit like a document
+              Teacher mode: fast editing with auto-save
             </p>
           </div>
         </div>
@@ -80,6 +96,33 @@ export const EditorToolbar = ({
             </Button>
           </div>
 
+          <div className="hidden items-center gap-1 md:flex">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onUndo}
+              disabled={!canUndo}
+              className="h-8 gap-1 text-xs"
+            >
+              <Undo2 className="h-3.5 w-3.5" />
+              Undo
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRedo}
+              disabled={!canRedo}
+              className="h-8 gap-1 text-xs"
+            >
+              <Redo2 className="h-3.5 w-3.5" />
+              Redo
+            </Button>
+          </div>
+
+          <div className="hidden rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 md:block">
+            Total points: <span className="font-semibold text-slate-800">{pointsTotal}</span>
+          </div>
+
           <div className="hidden items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 md:flex">
             {isSaving ? (
               <>
@@ -95,6 +138,15 @@ export const EditorToolbar = ({
               <span>Not saved</span>
             )}
           </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAnswerKey(!showAnswerKey)}
+            className="gap-1.5 text-xs"
+          >
+            {showAnswerKey ? 'Hide answers' : 'Show answers'}
+          </Button>
 
           <Button
             variant="outline"

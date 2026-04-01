@@ -67,18 +67,24 @@ function buildPrintableHtml({
   content,
   theme,
   worksheetId,
+  includeAnswerKey,
 }: {
   content: Content;
   theme: WorksheetTheme;
   worksheetId: string;
+  includeAnswerKey: boolean;
 }) {
   const spacing = spacingPx(theme.spacingPreset);
   const safeTitle = escapeHtml(content.title || worksheetId);
   const safeInstructions = escapeHtml(content.instructions || '');
 
   const sectionsHtml = (content.sections ?? [])
-    .map((section) => {
+    .map((section, sectionIndex) => {
       const safeHeading = escapeHtml(section.heading || '');
+      const sectionPoints = (section.questions ?? []).reduce(
+        (sum, q) => sum + (q.points ?? 0),
+        0,
+      );
       const questionsHtml = (section.questions ?? [])
         .map((q, index) => {
           const safePrompt = escapeHtml(q.prompt || '');
@@ -101,6 +107,10 @@ function buildPrintableHtml({
             q.question_type === 'short_answer' || q.question_type === 'essay'
               ? `<div class="boxed-answer ${q.question_type === 'essay' ? 'essay' : 'short'}"></div>`
               : '';
+          const answerKeyBlock =
+            includeAnswerKey && q.answer
+              ? `<div class="answer-key">Answer: ${escapeHtml(q.answer)}</div>`
+              : '';
 
           return `
             <div class="question">
@@ -109,17 +119,23 @@ function buildPrintableHtml({
               ${trueFalseBlock}
               ${fillBlankBlock}
               ${textAnswerBlock}
+              ${answerKeyBlock}
             </div>
           `;
         })
         .join('');
 
       return `
-        <h2>${safeHeading}</h2>
+        <h2>Section ${sectionIndex + 1}: ${safeHeading || 'Untitled section'} <span class="section-points">(${sectionPoints} pts)</span></h2>
         ${questionsHtml}
       `;
     })
     .join('');
+  const totalPoints = (content.sections ?? []).reduce(
+    (sum, section) =>
+      sum + (section.questions ?? []).reduce((inner, q) => inner + (q.points ?? 0), 0),
+    0,
+  );
 
   return `
 <!doctype html>
@@ -133,9 +149,12 @@ function buildPrintableHtml({
       h1 { font-size: ${theme.headingFontSize}px; color: ${theme.primaryColor}; margin-bottom: 8px; }
       h2 { font-size: ${Math.max(theme.headingFontSize - 4, 16)}px; margin-top: ${spacing}px; border-bottom: 2px solid ${theme.primaryColor}; padding-bottom: 4px; }
       .instructions { font-style: italic; color: #666; margin-bottom: ${spacing}px; white-space: pre-wrap; }
+      .meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: ${spacing}px; font-size: 12px; color: #4b5563; border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px 10px; background: #f8fafc; }
       .question { margin: ${spacing}px 0; font-size: ${theme.bodyFontSize}px; }
       .options { margin-left: 20px; margin-top: 4px; }
       .option { margin: 4px 0; }
+      .section-points { font-size: 12px; color: #6b7280; font-weight: 500; }
+      .answer-key { margin-top: 6px; font-size: 12px; color: #374151; background: #f1f5f9; border-radius: 4px; padding: 4px 8px; }
       .line-answer { border-bottom: 1px solid #999; width: 200px; height: 20px; margin-top: 4px; }
       .boxed-answer { border: 1px solid #ddd; margin-top: 4px; border-radius: 4px; }
       .boxed-answer.short { height: 30px; }
@@ -146,6 +165,10 @@ function buildPrintableHtml({
   <body>
     <h1>${safeTitle}</h1>
     ${safeInstructions ? `<p class="instructions">${safeInstructions}</p>` : ''}
+    <div class="meta">
+      <span>Total points: <strong>${totalPoints}</strong></span>
+      <span>Answer key: <strong>${includeAnswerKey ? 'Included' : 'Hidden'}</strong></span>
+    </div>
     ${sectionsHtml}
   </body>
 </html>`;
@@ -154,9 +177,11 @@ function buildPrintableHtml({
 async function buildPdfResponse({
   requestName,
   worksheetId,
+  includeAnswerKey,
 }: {
   requestName: string;
   worksheetId?: string;
+  includeAnswerKey: boolean;
 }) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -215,6 +240,7 @@ async function buildPdfResponse({
       content,
       theme: { ...theme, spacingPreset: layout.spacingPreset ?? theme.spacingPreset },
       worksheetId,
+      includeAnswerKey,
     });
   } catch (e) {
     return handleUnknownError(`${requestName} /api/exports/pdf (render html)`, e);
@@ -250,10 +276,14 @@ async function buildPdfResponse({
 
 export async function POST(req: Request) {
   return withApiErrorHandling('POST /api/exports/pdf', async () => {
-    const payload = (await req.json()) as { worksheetId?: string };
+    const payload = (await req.json()) as {
+      worksheetId?: string;
+      includeAnswerKey?: boolean;
+    };
     return buildPdfResponse({
       requestName: 'POST',
       worksheetId: payload.worksheetId,
+      includeAnswerKey: Boolean(payload.includeAnswerKey),
     });
   });
 }
@@ -262,6 +292,7 @@ export async function GET(req: Request) {
   return withApiErrorHandling('GET /api/exports/pdf', async () => {
     const { searchParams } = new URL(req.url);
     const worksheetId = searchParams.get('worksheetId') ?? undefined;
-    return buildPdfResponse({ requestName: 'GET', worksheetId });
+    const includeAnswerKey = searchParams.get('includeAnswerKey') === '1';
+    return buildPdfResponse({ requestName: 'GET', worksheetId, includeAnswerKey });
   });
 }

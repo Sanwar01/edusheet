@@ -48,6 +48,18 @@ const questionSpacingClassMap: Record<WorksheetTheme['spacingPreset'], string> =
   spacious: 'space-y-4',
 };
 
+type EditorSnapshot = {
+  content: WorksheetContent;
+  theme: WorksheetTheme;
+  sectionCollapsed: Record<string, boolean>;
+  showAnswerKey: boolean;
+};
+
+type EditorHistory = {
+  past: EditorSnapshot[];
+  future: EditorSnapshot[];
+};
+
 export const EditorShell = ({
   worksheetId,
   initialContent,
@@ -64,6 +76,8 @@ export const EditorShell = ({
   const [content, setContent] = useState(initialContent);
   const [theme, setTheme] = useState(initialTheme);
   const [showThemeSidebar, setShowThemeSidebar] = useState(false);
+  const [showAnswerKey, setShowAnswerKey] = useState(false);
+  const [sectionCollapsed, setSectionCollapsed] = useState<Record<string, boolean>>({});
   const [mode, setMode] = useState<'edit' | 'preview'>('edit');
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -73,6 +87,12 @@ export const EditorShell = ({
   );
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autosaveRetryRef = useRef(0);
+  const restoringHistoryRef = useRef(false);
+  const [history, setHistory] = useState<EditorHistory>({ past: [], future: [] });
+  const contentRef = useRef(content);
+  const themeRef = useRef(theme);
+  const sectionCollapsedRef = useRef(sectionCollapsed);
+  const showAnswerKeyRef = useRef(showAnswerKey);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -112,11 +132,124 @@ export const EditorShell = ({
   const contentFontClass = fontFamilyClassMap[theme.fontFamily];
   const sectionSpacingClass = sectionSpacingClassMap[theme.spacingPreset];
   const questionSpacingClass = questionSpacingClassMap[theme.spacingPreset];
+  const pointsBySection = useMemo(
+    () =>
+      Object.fromEntries(
+        content.sections.map((section) => [
+          section.id,
+          section.questions.reduce((sum, q) => sum + (q.points ?? 0), 0),
+        ]),
+      ),
+    [content.sections],
+  );
+  const pointsTotal = useMemo(
+    () => Object.values(pointsBySection).reduce((sum, points) => sum + points, 0),
+    [pointsBySection],
+  );
+
+  useEffect(() => {
+    contentRef.current = content;
+  }, [content]);
+
+  useEffect(() => {
+    themeRef.current = theme;
+  }, [theme]);
+
+  useEffect(() => {
+    sectionCollapsedRef.current = sectionCollapsed;
+  }, [sectionCollapsed]);
+
+  useEffect(() => {
+    showAnswerKeyRef.current = showAnswerKey;
+  }, [showAnswerKey]);
+
+  const toSnapshot = useCallback((): EditorSnapshot => {
+    return {
+      content: JSON.parse(JSON.stringify(contentRef.current)) as WorksheetContent,
+      theme: { ...themeRef.current },
+      sectionCollapsed: { ...sectionCollapsedRef.current },
+      showAnswerKey: showAnswerKeyRef.current,
+    };
+  }, []);
+
+  const recordHistory = useCallback(() => {
+    if (restoringHistoryRef.current) return;
+    const snapshot = toSnapshot();
+    setHistory((prev) => ({
+      past: [...prev.past, snapshot].slice(-40),
+      future: [],
+    }));
+  }, [toSnapshot]);
+
+  const restoreSnapshot = useCallback((snapshot: EditorSnapshot) => {
+    restoringHistoryRef.current = true;
+    setContent(snapshot.content);
+    setTheme(snapshot.theme);
+    setSectionCollapsed(snapshot.sectionCollapsed);
+    setShowAnswerKey(snapshot.showAnswerKey);
+    setSaveState('idle');
+    setIsDirty(true);
+    setTimeout(() => {
+      restoringHistoryRef.current = false;
+    }, 0);
+  }, []);
+
+  const undo = useCallback(() => {
+    setHistory((prev) => {
+      if (prev.past.length === 0) return prev;
+      const previous = prev.past[prev.past.length - 1];
+      const current = toSnapshot();
+      restoreSnapshot(previous);
+      return {
+        past: prev.past.slice(0, -1),
+        future: [current, ...prev.future].slice(0, 40),
+      };
+    });
+  }, [restoreSnapshot, toSnapshot]);
+
+  const redo = useCallback(() => {
+    setHistory((prev) => {
+      if (prev.future.length === 0) return prev;
+      const [next, ...restFuture] = prev.future;
+      const current = toSnapshot();
+      restoreSnapshot(next);
+      return {
+        past: [...prev.past, current].slice(-40),
+        future: restFuture,
+      };
+    });
+  }, [restoreSnapshot, toSnapshot]);
 
   const markDirty = () => {
     setIsDirty(true);
     setSaveState('idle');
   };
+
+  const setContentWithHistory = useCallback(
+    (updater: WorksheetContent | ((prev: WorksheetContent) => WorksheetContent)) => {
+      recordHistory();
+      setContent((prev) =>
+        typeof updater === 'function'
+          ? (updater as (prev: WorksheetContent) => WorksheetContent)(prev)
+          : updater,
+      );
+      markDirty();
+    },
+    [recordHistory],
+  );
+
+  const setThemeWithHistory = useCallback(
+    (next: WorksheetTheme | ((prev: WorksheetTheme) => WorksheetTheme)) => {
+      recordHistory();
+      setTheme((prev) =>
+        typeof next === 'function'
+          ? (next as (prev: WorksheetTheme) => WorksheetTheme)(prev)
+          : next,
+      );
+      markDirty();
+    },
+    [recordHistory],
+  );
 
   const validateContentForSave = useCallback(() => {
     const result = WorksheetContentSchema.safeParse(content);
@@ -136,13 +269,12 @@ export const EditorShell = ({
       section: WorksheetContent['sections'][number],
     ) => WorksheetContent['sections'][number],
   ) => {
-    setContent((prev) => ({
+    setContentWithHistory((prev) => ({
       ...prev,
       sections: prev.sections.map((section) =>
         section.id === sectionId ? updater(section) : section,
       ),
     }));
-    markDirty();
   };
 
   const onSectionsDragEnd = (event: DragEndEvent) => {
@@ -152,27 +284,27 @@ export const EditorShell = ({
     const newIndex = content.sections.findIndex((s) => s.id === over.id);
     if (oldIndex < 0 || newIndex < 0) return;
 
-    setContent((prev) => ({
+    setContentWithHistory((prev) => ({
       ...prev,
       sections: arrayMove(prev.sections, oldIndex, newIndex),
     }));
-    markDirty();
   };
 
   const addSection = () => {
-    setContent((prev) => ({
+    const id = newId('sec');
+    setContentWithHistory((prev) => ({
       ...prev,
       sections: [
         ...prev.sections,
         {
-          id: newId('sec'),
+          id,
           type: 'section',
           heading: `Section ${prev.sections.length + 1}`,
           questions: [],
         },
       ],
     }));
-    markDirty();
+    setSectionCollapsed((prev) => ({ ...prev, [id]: false }));
   };
 
   const addQuestionToSection = (sectionId: string) => {
@@ -311,7 +443,10 @@ export const EditorShell = ({
       const res = await fetch('/api/exports/pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ worksheetId: resolvedWorksheetId }),
+        body: JSON.stringify({
+          worksheetId: resolvedWorksheetId,
+          includeAnswerKey: showAnswerKey,
+        }),
       });
       if (!res.ok) {
         printWindow.close();
@@ -342,6 +477,24 @@ export const EditorShell = ({
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      const isUndoShortcut =
+        (event.metaKey || event.ctrlKey) &&
+        !event.shiftKey &&
+        event.key.toLowerCase() === 'z';
+      if (isUndoShortcut) {
+        event.preventDefault();
+        undo();
+        return;
+      }
+      const isRedoShortcut =
+        (event.metaKey || event.ctrlKey) &&
+        ((event.shiftKey && event.key.toLowerCase() === 'z') ||
+          event.key.toLowerCase() === 'y');
+      if (isRedoShortcut) {
+        event.preventDefault();
+        redo();
+        return;
+      }
       const isSaveShortcut =
         (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's';
       if (!isSaveShortcut) return;
@@ -351,7 +504,7 @@ export const EditorShell = ({
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [saveDraft]);
+  }, [redo, saveDraft, undo]);
 
   useEffect(() => {
     if (!isDirty) return;
@@ -384,8 +537,15 @@ export const EditorShell = ({
     <>
       <EditorToolbar
         title={content.title}
+        pointsTotal={pointsTotal}
         mode={mode}
         setMode={setMode}
+        showAnswerKey={showAnswerKey}
+        setShowAnswerKey={setShowAnswerKey}
+        canUndo={history.past.length > 0}
+        canRedo={history.future.length > 0}
+        onUndo={undo}
+        onRedo={redo}
         showThemeSidebar={showThemeSidebar}
         setShowThemeSidebar={setShowThemeSidebar}
         onSave={saveDraft}
@@ -415,11 +575,15 @@ export const EditorShell = ({
                 {content.instructions ? (
                   <p className="mb-6 italic text-slate-700">{content.instructions}</p>
                 ) : null}
+                <div className="mb-4 flex items-center justify-between rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                  <span>Preview is read-only and mirrors export layout.</span>
+                  <span className="font-medium">Total points: {pointsTotal}</span>
+                </div>
                 <div className={sectionSpacingClass}>
                   {content.sections.map((section, sectionIndex) => (
                     <section key={section.id} className={questionSpacingClass}>
                       <h2 className="font-semibold">
-                        Section {sectionIndex + 1}: {section.heading || 'Untitled section'}
+                        Section {sectionIndex + 1}: {section.heading || 'Untitled section'} ({pointsBySection[section.id] ?? 0} pts)
                       </h2>
                       <ol className={`list-decimal pl-5 ${questionSpacingClass}`}>
                         {section.questions.map((question) => (
@@ -442,6 +606,11 @@ export const EditorShell = ({
                             {question.question_type === 'fill_in_blank' && (
                               <div className="h-6 w-52 border-b border-slate-400" />
                             )}
+                            {showAnswerKey && question.answer ? (
+                              <p className="text-xs text-slate-600">
+                                Answer: <span className="font-medium">{question.answer}</span>
+                              </p>
+                            ) : null}
                           </li>
                         ))}
                       </ol>
@@ -520,8 +689,7 @@ export const EditorShell = ({
               <input
                 value={content.title}
                 onChange={(e) => {
-                  setContent((prev) => ({ ...prev, title: e.target.value }));
-                  markDirty();
+                  setContentWithHistory((prev) => ({ ...prev, title: e.target.value }));
                 }}
                 className="w-full border-none bg-transparent text-2xl font-bold text-slate-900 outline-none md:text-3xl"
                 style={{
@@ -534,11 +702,10 @@ export const EditorShell = ({
               <textarea
                 value={content.instructions || ''}
                 onChange={(e) => {
-                  setContent((prev) => ({
+                  setContentWithHistory((prev) => ({
                     ...prev,
                     instructions: e.target.value,
                   }));
-                  markDirty();
                 }}
                 placeholder="Short instructions for students"
                 className={`mt-2 mb-6 w-full resize-none rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm italic text-slate-700 outline-none ${contentFontClass}`}
@@ -581,10 +748,19 @@ export const EditorShell = ({
                             section={section}
                             sectionNumber={index + 1}
                             questionStartNumber={questionStartNumber}
+                            sectionPoints={pointsBySection[section.id] ?? 0}
+                            isCollapsed={Boolean(sectionCollapsed[section.id])}
+                            onToggleCollapsed={() =>
+                              setSectionCollapsed((prev) => ({
+                                ...prev,
+                                [section.id]: !prev[section.id],
+                              }))
+                            }
                             onChangeSection={(nextSection) =>
                               updateSectionById(section.id, () => nextSection)
                             }
                             onDuplicateSection={() => {
+                              recordHistory();
                               setContent((prev) => ({
                                 ...prev,
                                 sections: [
@@ -599,6 +775,10 @@ export const EditorShell = ({
                                   },
                                 ],
                               }));
+                              setSectionCollapsed((prev) => ({
+                                ...prev,
+                                [section.id]: prev[section.id] ?? false,
+                              }));
                               markDirty();
                             }}
                             onDeleteSection={() => {
@@ -606,12 +786,18 @@ export const EditorShell = ({
                                 'Delete this section and all of its questions? This cannot be undone.',
                               );
                               if (!confirmed) return;
+                              recordHistory();
                               setContent((prev) => ({
                                 ...prev,
                                 sections: prev.sections.filter(
                                   (s) => s.id !== section.id,
                                 ),
                               }));
+                              setSectionCollapsed((prev) => {
+                                const next = { ...prev };
+                                delete next[section.id];
+                                return next;
+                              });
                               markDirty();
                             }}
                             onAddQuestion={() =>
@@ -640,7 +826,7 @@ export const EditorShell = ({
 
         {showThemeSidebar && (
           <div className="fixed top-16 right-0 bottom-0 z-40 w-72 border-l border-slate-200 h-full">
-            <ThemeSettingsSidebar theme={theme} setTheme={setTheme} />
+            <ThemeSettingsSidebar theme={theme} setTheme={setThemeWithHistory} />
           </div>
         )}
       </div>

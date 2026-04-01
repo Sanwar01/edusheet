@@ -1,6 +1,12 @@
 'use client';
 
-import { CirclePlus, Copy, Trash2 } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  CirclePlus,
+  Copy,
+  Trash2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { WorksheetContent } from '@/types/worksheet';
@@ -11,6 +17,9 @@ export const WorksheetSectionCard = ({
   section,
   sectionNumber,
   questionStartNumber,
+  sectionPoints,
+  isCollapsed,
+  onToggleCollapsed,
   onChangeSection,
   onDuplicateSection,
   onDeleteSection,
@@ -19,6 +28,9 @@ export const WorksheetSectionCard = ({
   section: WorksheetContent['sections'][number];
   sectionNumber: number;
   questionStartNumber: number;
+  sectionPoints: number;
+  isCollapsed: boolean;
+  onToggleCollapsed: () => void;
   onChangeSection: (next: WorksheetContent['sections'][number]) => void;
   onDuplicateSection: () => void;
   onDeleteSection: () => void;
@@ -31,6 +43,24 @@ export const WorksheetSectionCard = ({
           Section {sectionNumber}
         </p>
         <div className="flex items-center gap-1">
+          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">
+            {sectionPoints} pts
+          </span>
+          <Button
+            variant="ghost"
+            className="h-8 px-2 text-xs text-slate-600"
+            onClick={onToggleCollapsed}
+          >
+            {isCollapsed ? (
+              <>
+                <ChevronRight className="h-3.5 w-3.5" /> Show section
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-3.5 w-3.5" /> Hide section
+              </>
+            )}
+          </Button>
           <Button
             variant="ghost"
             className="h-8 px-2 text-xs text-slate-600"
@@ -60,21 +90,25 @@ export const WorksheetSectionCard = ({
         }
       />
 
-      <SectionQuestionsDnd
-        section={section}
-        questionStartNumber={questionStartNumber}
-        onChangeQuestions={(next) =>
-          onChangeSection({ ...section, questions: next })
-        }
-      />
+      {!isCollapsed && (
+        <>
+          <SectionQuestionsDnd
+            section={section}
+            questionStartNumber={questionStartNumber}
+            onChangeQuestions={(next) =>
+              onChangeSection({ ...section, questions: next })
+            }
+          />
 
-      <Button
-        variant="outline"
-        className="mt-1 h-9 w-full border-dashed text-xs"
-        onClick={onAddQuestion}
-      >
-        <CirclePlus className="h-3.5 w-3.5" /> Add question
-      </Button>
+          <Button
+            variant="outline"
+            className="mt-1 h-9 w-full border-dashed text-xs"
+            onClick={onAddQuestion}
+          >
+            <CirclePlus className="h-3.5 w-3.5" /> Add question
+          </Button>
+        </>
+      )}
     </SortableSectionShell>
   );
 };

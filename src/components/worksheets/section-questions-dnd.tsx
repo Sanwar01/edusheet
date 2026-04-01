@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   DndContext,
   PointerSensor,
@@ -13,7 +14,7 @@ import {
   arrayMove,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Copy, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Copy, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -42,6 +43,15 @@ const QUESTION_TYPE_OPTIONS: { value: QuestionType; label: string }[] = [
 ];
 
 const TRUE_FALSE_OPTIONS = ['True', 'False'] as const;
+
+const questionTypeLabelMap: Record<QuestionType, string> = {
+  short_answer: 'Short answer',
+  multiple_choice: 'Multiple choice',
+  true_false: 'True / False',
+  fill_in_blank: 'Fill in the blank',
+  matching: 'Matching',
+  essay: 'Essay',
+};
 
 const buildQuestionByType = (
   current: WorksheetQuestion,
@@ -91,6 +101,9 @@ export const SectionQuestionsDnd = ({
   onChangeQuestions: (next: WorksheetQuestion[]) => void;
   questionStartNumber: number;
 }) => {
+  const [collapsedByQuestionId, setCollapsedByQuestionId] = useState<
+    Record<string, boolean>
+  >({});
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
@@ -131,6 +144,27 @@ export const SectionQuestionsDnd = ({
                   Question {questionStartNumber + index}
                 </p>
                 <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-7 px-2 text-xs text-slate-600"
+                    onClick={() =>
+                      setCollapsedByQuestionId((prev) => ({
+                        ...prev,
+                        [question.id]: !prev[question.id],
+                      }))
+                    }
+                  >
+                    {collapsedByQuestionId[question.id] ? (
+                      <>
+                        <ChevronRight className="h-3.5 w-3.5" /> Show question
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-3.5 w-3.5" /> Hide question
+                      </>
+                    )}
+                  </Button>
                   <Select
                     value={question.question_type}
                     onValueChange={(nextType) =>
@@ -169,7 +203,7 @@ export const SectionQuestionsDnd = ({
                                   ...q,
                                   points: Number.isNaN(Number(e.target.value))
                                     ? 1
-                                      : Math.max(1, Number(e.target.value)),
+                                    : Math.max(1, Number(e.target.value)),
                                 }
                               : q,
                           ),
@@ -195,198 +229,230 @@ export const SectionQuestionsDnd = ({
                   )
                 }
               />
-              {(question.question_type === 'multiple_choice' ||
-                question.question_type === 'matching') && (
-                <div className="mt-2 space-y-1.5">
-                  {(question.options ?? []).map((option, optionIndex) => (
-                    <div
-                      key={`${question.id}_opt_${optionIndex}`}
-                      className="flex items-center gap-2"
-                    >
-                      <span className="text-xs text-slate-500">
-                        {String.fromCharCode(65 + optionIndex)}.
-                      </span>
-                      <input
-                        value={option}
-                        onChange={(e) =>
-                          onChangeQuestions(
-                            section.questions.map((q) => {
-                              if (q.id !== question.id) return q;
-                              const nextOptions = [...(q.options ?? [])];
-                              nextOptions[optionIndex] = e.target.value;
-                              return { ...q, options: nextOptions };
-                            }),
-                          )
-                        }
-                        placeholder={`Option ${optionIndex + 1}`}
-                        className="h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-sm outline-none focus:border-slate-300"
-                      />
-                      {question.question_type === 'multiple_choice' && (
-                        <Button
-                          type="button"
-                          variant={question.answer === option ? 'default' : 'outline'}
-                          className="h-8 text-xs"
-                          onClick={() =>
-                            onChangeQuestions(
-                              section.questions.map((q) =>
-                                q.id === question.id
-                                  ? { ...q, answer: option }
-                                  : q,
-                              ),
-                            )
-                          }
-                        >
-                          Correct
-                        </Button>
-                      )}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="h-8 px-2 text-xs text-rose-600 hover:text-rose-700"
-                        disabled={
-                          question.question_type === 'multiple_choice' &&
-                          (question.options?.length ?? 0) <= 2
-                        }
-                        onClick={() =>
-                          onChangeQuestions(
-                            section.questions.map((q) => {
-                              if (q.id !== question.id) return q;
-                              const nextOptions = [...(q.options ?? [])].filter(
-                                (_, i) => i !== optionIndex,
-                              );
-                              const nextAnswer =
-                                q.answer === option ? nextOptions[0] ?? '' : q.answer;
-                              return { ...q, options: nextOptions, answer: nextAnswer };
-                            }),
-                          )
-                        }
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  ))}
-                  <Button
-                    variant="ghost"
-                    className="h-8 px-2 text-xs text-slate-600"
-                    onClick={() =>
-                      onChangeQuestions(
-                        section.questions.map((q) =>
-                          q.id === question.id
-                            ? {
-                                ...q,
-                                options: [
-                                  ...(q.options ?? []),
-                                  `Option ${(q.options?.length ?? 0) + 1}`,
-                                ],
-                              }
-                            : q,
-                        ),
-                      )
-                    }
-                  >
-                    Add option
-                  </Button>
-                  {question.question_type === 'multiple_choice' && (
-                    <p className="text-xs text-slate-500">
-                      Multiple choice requires at least 2 options and one correct
-                      answer.
-                    </p>
-                  )}
+              {collapsedByQuestionId[question.id] ? (
+                <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                  <span className="rounded-full bg-white px-2 py-1">
+                    Type: {questionTypeLabelMap[question.question_type]}
+                  </span>
+                  <span className="rounded-full bg-white px-2 py-1">
+                    Points: {question.points ?? 1}
+                  </span>
+                  <span className="rounded-full bg-white px-2 py-1">
+                    Answer: {question.answer?.trim() ? 'Set' : 'Not set'}
+                  </span>
                 </div>
-              )}
-              {question.question_type === 'true_false' ? (
-                <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
-                  <p className="mb-1 text-xs font-medium text-slate-500">Correct answer</p>
-                  <div className="flex gap-2">
-                    {TRUE_FALSE_OPTIONS.map((value) => (
+              ) : (
+                <>
+                  {(question.question_type === 'multiple_choice' ||
+                    question.question_type === 'matching') && (
+                    <div className="mt-2 space-y-1.5">
+                      {(question.options ?? []).map((option, optionIndex) => (
+                        <div
+                          key={`${question.id}_opt_${optionIndex}`}
+                          className="flex items-center gap-2"
+                        >
+                          <span className="text-xs text-slate-500">
+                            {String.fromCharCode(65 + optionIndex)}.
+                          </span>
+                          <input
+                            value={option}
+                            onChange={(e) =>
+                              onChangeQuestions(
+                                section.questions.map((q) => {
+                                  if (q.id !== question.id) return q;
+                                  const nextOptions = [...(q.options ?? [])];
+                                  nextOptions[optionIndex] = e.target.value;
+                                  return { ...q, options: nextOptions };
+                                }),
+                              )
+                            }
+                            placeholder={`Option ${optionIndex + 1}`}
+                            className="h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-sm outline-none focus:border-slate-300"
+                          />
+                          {question.question_type === 'multiple_choice' && (
+                            <Button
+                              type="button"
+                              variant={
+                                question.answer === option
+                                  ? 'default'
+                                  : 'outline'
+                              }
+                              className="h-8 text-xs"
+                              onClick={() =>
+                                onChangeQuestions(
+                                  section.questions.map((q) =>
+                                    q.id === question.id
+                                      ? { ...q, answer: option }
+                                      : q,
+                                  ),
+                                )
+                              }
+                            >
+                              Correct
+                            </Button>
+                          )}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="h-8 px-2 text-xs text-rose-600 hover:text-rose-700"
+                            disabled={
+                              question.question_type === 'multiple_choice' &&
+                              (question.options?.length ?? 0) <= 2
+                            }
+                            onClick={() =>
+                              onChangeQuestions(
+                                section.questions.map((q) => {
+                                  if (q.id !== question.id) return q;
+                                  const nextOptions = [
+                                    ...(q.options ?? []),
+                                  ].filter((_, i) => i !== optionIndex);
+                                  const nextAnswer =
+                                    q.answer === option
+                                      ? (nextOptions[0] ?? '')
+                                      : q.answer;
+                                  return {
+                                    ...q,
+                                    options: nextOptions,
+                                    answer: nextAnswer,
+                                  };
+                                }),
+                              )
+                            }
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
                       <Button
-                        key={value}
-                        type="button"
-                        variant={question.answer === value ? 'default' : 'outline'}
-                        className="h-8 text-xs"
+                        variant="ghost"
+                        className="h-8 px-2 text-xs text-slate-600"
                         onClick={() =>
                           onChangeQuestions(
                             section.questions.map((q) =>
-                              q.id === question.id ? { ...q, answer: value } : q,
+                              q.id === question.id
+                                ? {
+                                    ...q,
+                                    options: [
+                                      ...(q.options ?? []),
+                                      `Option ${(q.options?.length ?? 0) + 1}`,
+                                    ],
+                                  }
+                                : q,
                             ),
                           )
                         }
                       >
-                        {value}
+                        Add option
                       </Button>
-                    ))}
+                      {question.question_type === 'multiple_choice' && (
+                        <p className="text-xs text-slate-500">
+                          Multiple choice requires at least 2 options and one
+                          correct answer.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {question.question_type === 'true_false' ? (
+                    <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
+                      <p className="mb-1 text-xs font-medium text-slate-500">
+                        Correct answer
+                      </p>
+                      <div className="flex gap-2">
+                        {TRUE_FALSE_OPTIONS.map((value) => (
+                          <Button
+                            key={value}
+                            type="button"
+                            variant={
+                              question.answer === value ? 'default' : 'outline'
+                            }
+                            className="h-8 text-xs"
+                            onClick={() =>
+                              onChangeQuestions(
+                                section.questions.map((q) =>
+                                  q.id === question.id
+                                    ? { ...q, answer: value }
+                                    : q,
+                                ),
+                              )
+                            }
+                          >
+                            {value}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : question.question_type === 'short_answer' ? (
+                    <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
+                      <p className="mb-1 text-xs font-medium text-slate-500">
+                        Expected answer (optional)
+                      </p>
+                      <Input
+                        value={question.answer ?? ''}
+                        placeholder="Optional teacher answer"
+                        className="w-full border-slate-200 bg-white"
+                        onChange={(e) =>
+                          onChangeQuestions(
+                            section.questions.map((q) =>
+                              q.id === question.id
+                                ? { ...q, answer: e.target.value }
+                                : q,
+                            ),
+                          )
+                        }
+                      />
+                    </div>
+                  ) : (
+                    <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
+                      <p className="mb-1 text-xs font-medium text-slate-500">
+                        Answer
+                      </p>
+                      <Textarea
+                        value={question.answer ?? ''}
+                        placeholder="Type the expected answer"
+                        className="w-full h-full border-slate-200 bg-white"
+                        onChange={(e) =>
+                          onChangeQuestions(
+                            section.questions.map((q) =>
+                              q.id === question.id
+                                ? { ...q, answer: e.target.value }
+                                : q,
+                            ),
+                          )
+                        }
+                      />
+                    </div>
+                  )}
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    <Button
+                      variant="ghost"
+                      className="h-8 px-2 text-xs text-slate-600"
+                      onClick={() =>
+                        onChangeQuestions([
+                          ...section.questions,
+                          duplicateQuestion(question),
+                        ])
+                      }
+                    >
+                      <Copy className="h-3.5 w-3.5" /> Duplicate
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="h-8 px-2 text-xs text-rose-600 hover:text-rose-700"
+                      onClick={() => {
+                        const confirmed = window.confirm(
+                          'Delete this question? This cannot be undone.',
+                        );
+                        if (!confirmed) return;
+                        onChangeQuestions(
+                          section.questions.filter((q) => q.id !== question.id),
+                        );
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Delete
+                    </Button>
                   </div>
-                </div>
-              ) : question.question_type === 'short_answer' ? (
-                <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
-                  <p className="mb-1 text-xs font-medium text-slate-500">
-                    Expected answer (optional)
-                  </p>
-                  <Input
-                    value={question.answer ?? ''}
-                    placeholder="Optional teacher answer"
-                    className="w-full border-slate-200 bg-white"
-                    onChange={(e) =>
-                      onChangeQuestions(
-                        section.questions.map((q) =>
-                          q.id === question.id
-                            ? { ...q, answer: e.target.value }
-                            : q,
-                        ),
-                      )
-                    }
-                  />
-                </div>
-              ) : (
-                <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
-                  <p className="mb-1 text-xs font-medium text-slate-500">
-                    Answer
-                  </p>
-                  <Textarea
-                    value={question.answer ?? ''}
-                    placeholder="Type the expected answer"
-                    className="w-full h-full border-slate-200 bg-white"
-                    onChange={(e) =>
-                      onChangeQuestions(
-                        section.questions.map((q) =>
-                          q.id === question.id
-                            ? { ...q, answer: e.target.value }
-                            : q,
-                        ),
-                      )
-                    }
-                  />
-                </div>
+                </>
               )}
-              <div className="mt-2 flex flex-wrap gap-1">
-                <Button
-                  variant="ghost"
-                  className="h-8 px-2 text-xs text-slate-600"
-                  onClick={() =>
-                    onChangeQuestions([
-                      ...section.questions,
-                      duplicateQuestion(question),
-                    ])
-                  }
-                >
-                  <Copy className="h-3.5 w-3.5" /> Duplicate
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="h-8 px-2 text-xs text-rose-600 hover:text-rose-700"
-                  onClick={() => {
-                    const confirmed = window.confirm(
-                      'Delete this question? This cannot be undone.',
-                    );
-                    if (!confirmed) return;
-                    onChangeQuestions(
-                      section.questions.filter((q) => q.id !== question.id),
-                    );
-                  }}
-                >
-                  <Trash2 className="h-3.5 w-3.5" /> Delete
-                </Button>
-              </div>
             </SortableQuestionShell>
           ))}
         </div>

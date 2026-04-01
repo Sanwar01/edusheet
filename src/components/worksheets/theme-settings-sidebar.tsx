@@ -94,8 +94,11 @@ export const ThemeSettingsSidebar = ({
 
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-slate-600">
-          Spacing density
+          Section and question spacing
         </label>
+        <p className="text-xs text-slate-500">
+          Controls spacing in editor preview and export layout.
+        </p>
         <Select
           value={theme.spacingPreset}
           onValueChange={(value) =>
