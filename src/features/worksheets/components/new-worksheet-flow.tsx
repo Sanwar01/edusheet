@@ -2,24 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Loader2, Sparkles, FilePlus } from 'lucide-react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { GRADE_LEVELS, QUESTION_TYPES, SUBJECTS } from '@/constants';
+import { GRADE_LEVELS, SUBJECTS } from '@/constants';
 import { fetchJson } from '@/lib/api/client';
 import { EditorShell } from '@/components/worksheets/editor-shell';
 import { GenerateWorksheetResponseSchema } from '@/lib/validators/api';
+import { NewWorksheetGeneratorForm } from '@/features/worksheets/components/new-worksheet-generator-form';
 
 export function NewWorksheetFlow() {
   const router = useRouter();
@@ -115,161 +103,28 @@ export function NewWorksheetFlow() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="container max-w-4xl py-8">
-        <div className="flex flex-row items-center justify-between gap-2">
-          <div className="flex flex-col items-start gap-2">
-            <h1 className="font-display text-2xl font-bold text-foreground">
-              Create a new worksheet
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Let AI do the heavy lifting, or start from scratch.
-            </p>
-          </div>
-          <Button variant="outline" onClick={handleBlankCreate}>
-            <FilePlus className="h-4 w-4" />
-            Start Blank
-          </Button>
-        </div>
-
-        <div className="mt-6 rounded-xl border bg-card p-6 shadow-sm">
-          <h1 className="font-display text-xl font-bold text-card-foreground">
-            Generate with AI
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Fill in the details and let AI create your worksheet.
-          </p>
-
-          <div className="mt-6 space-y-5">
-            <div className="space-y-2">
-              <Label>Topic *</Label>
-              <Input
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                placeholder="e.g. Photosynthesis, Fractions, World War II"
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Subject</Label>
-                <Select value={subject} onValueChange={(v) => setSubject(v)}>
-                  <SelectTrigger className="h-12">
-                    <SelectValue placeholder="Select subject" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SUBJECTS.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Grade Level</Label>
-                <Select value={gradeLevel} onValueChange={(v) => setGradeLevel(v)}>
-                  <SelectTrigger className="h-12">
-                    <SelectValue placeholder="Select grade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {GRADE_LEVELS.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Number of Questions</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={30}
-                  value={numQuestions}
-                  onChange={(e) => setNumQuestions(Number(e.target.value))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Difficulty</Label>
-                <Select
-                  value={difficulty}
-                  onValueChange={(v: 'easy' | 'medium' | 'hard' | 'mixed') =>
-                    setDifficulty(v)
-                  }
-                >
-                  <SelectTrigger className="h-12">
-                    <SelectValue placeholder="Select difficulty" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="easy">Easy</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="hard">Hard</SelectItem>
-                    <SelectItem value="mixed">Mixed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Question Types</Label>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {QUESTION_TYPES.map((qt) => (
-                  <label
-                    key={qt.id}
-                    className="cursor-pointer rounded-lg border p-3 transition-colors hover:bg-muted/50"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        checked={questionTypes.includes(qt.id)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setQuestionTypes([...questionTypes, qt.id]);
-                          } else {
-                            setQuestionTypes(
-                              questionTypes.filter((t) => t !== qt.id),
-                            );
-                          }
-                        }}
-                      />
-                      <span className="text-sm font-medium">{qt.label}</span>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2 border-t pt-2">
-              <Label>Additional Instructions (optional)</Label>
-              <Textarea
-                value={additionalInstructions}
-                onChange={(e) => setAdditionalInstructions(e.target.value)}
-                placeholder="e.g. Include a bonus question, make it fun and engaging, focus on vocabulary..."
-                rows={3}
-              />
-            </div>
-
-            <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-              <Button
-                className="flex-1 gap-2"
-                onClick={handleGenerate}
-                disabled={loading}
-              >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
-                {loading ? 'Generating…' : 'Generate with AI'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
+    <NewWorksheetGeneratorForm
+      state={{
+        topic,
+        subject,
+        gradeLevel,
+        questionTypes,
+        numQuestions,
+        difficulty,
+        additionalInstructions,
+        loading,
+      }}
+      actions={{
+        setTopic,
+        setSubject,
+        setGradeLevel,
+        setQuestionTypes,
+        setNumQuestions,
+        setDifficulty,
+        setAdditionalInstructions,
+        onGenerate: handleGenerate,
+        onStartBlank: handleBlankCreate,
+      }}
+    />
   );
 }
