@@ -7,9 +7,11 @@ import { CSS } from '@dnd-kit/utilities';
 export const SortableSectionShell = ({
   id,
   children,
+  sortData,
 }: {
   id: string;
   children: ReactNode;
+  sortData?: Record<string, unknown>;
 }) => {
   const {
     attributes,
@@ -18,7 +20,7 @@ export const SortableSectionShell = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({ id, data: sortData });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -51,9 +53,11 @@ export const SortableSectionShell = ({
 export const SortableQuestionShell = ({
   id,
   children,
+  sortData,
 }: {
   id: string;
   children: ReactNode;
+  sortData?: Record<string, unknown>;
 }) => {
   const {
     attributes,
@@ -62,7 +66,7 @@ export const SortableQuestionShell = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({ id, data: sortData });
 
   const style = {
     transform: CSS.Transform.toString(transform),

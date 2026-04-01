@@ -1,7 +1,7 @@
 'use client';
 
 import type { Dispatch, SetStateAction } from 'react';
-import { SlidersHorizontal } from 'lucide-react';
+import { PanelRightClose, SlidersHorizontal } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,18 +17,31 @@ import { defaultTheme } from '@/features/worksheets/defaults';
 export const ThemeSettingsSidebar = ({
   theme,
   setTheme,
+  onClose,
 }: {
   theme: WorksheetTheme;
   setTheme: Dispatch<SetStateAction<WorksheetTheme>>;
+  onClose?: () => void;
 }) => {
   return (
     <aside className="h-full w-72 shrink-0 space-y-4 overflow-auto border-l bg-white p-4">
-      <div className="flex items-center gap-2 border-b pb-3">
-        <SlidersHorizontal className="h-4 w-4 text-slate-500" />
-        <div>
-          <h3 className="text-sm font-semibold text-slate-900">Appearance</h3>
-          <p className="text-xs text-slate-500">Optional styling tweaks</p>
+      <div className="flex items-center justify-between gap-2 border-b pb-3">
+        <div className="flex items-center gap-2">
+          <SlidersHorizontal className="h-4 w-4 text-slate-500" />
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">Appearance</h3>
+            <p className="text-xs text-slate-500">Optional styling tweaks</p>
+          </div>
         </div>
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-7 px-2 text-xs text-slate-600"
+          onClick={onClose}
+        >
+          <PanelRightClose className="h-3.5 w-3.5" />
+          Close
+        </Button>
       </div>
 
       <Button

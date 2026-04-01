@@ -32,6 +32,11 @@ import type {
 } from '@/types/worksheet';
 import { SortableQuestionShell } from '@/components/worksheets/sortable-blocks';
 import { duplicateQuestion } from '@/components/worksheets/editor-shell.helpers';
+import {
+  isPaletteItemType,
+  PALETTE_DRAG_MIME,
+  type PaletteItemType,
+} from '@/components/worksheets/editor-dnd-types';
 
 const QUESTION_TYPE_OPTIONS: { value: QuestionType; label: string }[] = [
   { value: 'short_answer', label: 'Short answer' },
@@ -96,10 +101,14 @@ export const SectionQuestionsDnd = ({
   section,
   onChangeQuestions,
   questionStartNumber,
+  onDropPaletteItem,
+  showDropTargets,
 }: {
   section: WorksheetContent['sections'][number];
   onChangeQuestions: (next: WorksheetQuestion[]) => void;
   questionStartNumber: number;
+  onDropPaletteItem: (type: PaletteItemType, insertIndex?: number) => void;
+  showDropTargets: boolean;
 }) => {
   const [collapsedByQuestionId, setCollapsedByQuestionId] = useState<
     Record<string, boolean>
@@ -119,26 +128,63 @@ export const SectionQuestionsDnd = ({
 
   if (section.questions.length === 0) {
     return (
-      <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-4 text-sm text-slate-500">
-        No questions yet. Click{' '}
-        <span className="font-medium">Add question</span> to begin.
+      <div
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={(event) => {
+          const rawType = event.dataTransfer.getData(PALETTE_DRAG_MIME);
+          if (!rawType || !isPaletteItemType(rawType)) return;
+          if (rawType === 'section') return;
+          onDropPaletteItem(rawType, 0);
+        }}
+        className={`rounded-md border border-dashed px-3 py-4 text-sm transition-colors ${
+          showDropTargets
+            ? 'border-indigo-300 bg-indigo-50/60 text-slate-600 hover:border-indigo-500 hover:bg-indigo-100/70'
+            : 'border-slate-300 bg-slate-50 text-slate-500'
+        }`}
+      >
+        No questions yet. Click <span className="font-medium">Add question</span>{' '}
+        to begin, or drop a question here.
       </div>
     );
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragEnd={onDragEnd}
-    >
-      <SortableContext
-        items={section.questions.map((q) => q.id)}
-        strategy={verticalListSortingStrategy}
+    <div className="space-y-2">
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={onDragEnd}
       >
-        <div className="space-y-2.5">
-          {section.questions.map((question, index) => (
-            <SortableQuestionShell key={question.id} id={question.id}>
+        <SortableContext
+          items={section.questions.map((q) => q.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="space-y-2.5">
+            {section.questions.map((question, index) => (
+              <div key={question.id} className="space-y-2">
+                {showDropTargets ? (
+                  <div
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={(event) => {
+                      const rawType = event.dataTransfer.getData(PALETTE_DRAG_MIME);
+                      if (!rawType || !isPaletteItemType(rawType)) return;
+                      if (rawType === 'section') return;
+                      onDropPaletteItem(rawType, index);
+                    }}
+                    className="rounded border border-dashed border-indigo-300 bg-indigo-50/60 px-2 py-1 text-[11px] text-slate-600 transition-colors hover:border-indigo-500 hover:bg-indigo-100/70"
+                  >
+                    Drop question here (before {questionStartNumber + index})
+                  </div>
+                ) : null}
+                <SortableQuestionShell
+                  id={question.id}
+                  sortData={{
+                    kind: 'question',
+                    questionId: question.id,
+                    sectionId: section.id,
+                    index,
+                  }}
+                >
               <div className="mb-1 flex items-center justify-between gap-2">
                 <p className="text-xs font-medium text-slate-500">
                   Question {questionStartNumber + index}
@@ -215,20 +261,21 @@ export const SectionQuestionsDnd = ({
                 </div>
               </div>
 
-              <Textarea
-                value={question.prompt}
-                placeholder="Type the question prompt here"
-                className="w-full border-slate-200 bg-white font-semibold"
-                onChange={(e) =>
-                  onChangeQuestions(
-                    section.questions.map((q) =>
-                      q.id === question.id
-                        ? { ...q, prompt: e.target.value }
-                        : q,
-                    ),
-                  )
-                }
-              />
+                <Textarea
+                  id={`question_${question.id}`}
+                  value={question.prompt}
+                  placeholder="Type the question prompt here"
+                  className="w-full border-slate-200 bg-white font-semibold"
+                  onChange={(e) =>
+                    onChangeQuestions(
+                      section.questions.map((q) =>
+                        q.id === question.id
+                          ? { ...q, prompt: e.target.value }
+                          : q,
+                      ),
+                    )
+                  }
+                />
               {collapsedByQuestionId[question.id] ? (
                 <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
                   <span className="rounded-full bg-white px-2 py-1">
@@ -453,10 +500,26 @@ export const SectionQuestionsDnd = ({
                   </div>
                 </>
               )}
-            </SortableQuestionShell>
-          ))}
+                </SortableQuestionShell>
+              </div>
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+      {showDropTargets ? (
+        <div
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => {
+            const rawType = event.dataTransfer.getData(PALETTE_DRAG_MIME);
+            if (!rawType || !isPaletteItemType(rawType)) return;
+            if (rawType === 'section') return;
+            onDropPaletteItem(rawType, section.questions.length);
+          }}
+          className="rounded-md border border-dashed border-indigo-300 bg-indigo-50/60 px-3 py-2 text-xs text-slate-600 transition-colors hover:border-indigo-500 hover:bg-indigo-100/70"
+        >
+          Drop a question component here (end of section).
         </div>
-      </SortableContext>
-    </DndContext>
+      ) : null}
+    </div>
   );
 };

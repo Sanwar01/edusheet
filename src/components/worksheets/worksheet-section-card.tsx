@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import type { WorksheetContent } from '@/types/worksheet';
 import { SortableSectionShell } from '@/components/worksheets/sortable-blocks';
 import { SectionQuestionsDnd } from '@/components/worksheets/section-questions-dnd';
+import type { PaletteItemType } from '@/components/worksheets/editor-dnd-types';
 
 export const WorksheetSectionCard = ({
   section,
@@ -24,6 +25,8 @@ export const WorksheetSectionCard = ({
   onDuplicateSection,
   onDeleteSection,
   onAddQuestion,
+  onDropPaletteItem,
+  showDropTargets,
 }: {
   section: WorksheetContent['sections'][number];
   sectionNumber: number;
@@ -35,9 +38,14 @@ export const WorksheetSectionCard = ({
   onDuplicateSection: () => void;
   onDeleteSection: () => void;
   onAddQuestion: () => void;
+  onDropPaletteItem: (type: PaletteItemType, insertIndex?: number) => void;
+  showDropTargets: boolean;
 }) => {
   return (
-    <SortableSectionShell id={section.id}>
+    <SortableSectionShell
+      id={section.id}
+      sortData={{ kind: 'section', sectionId: section.id }}
+    >
       <div className="mb-1 flex items-center justify-between gap-2">
         <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
           Section {sectionNumber}
@@ -79,6 +87,7 @@ export const WorksheetSectionCard = ({
       </div>
 
       <Input
+        id={`section_${section.id}`}
         className="w-full border-slate-300 bg-white font-medium"
         value={section.heading}
         placeholder="Section heading"
@@ -95,6 +104,8 @@ export const WorksheetSectionCard = ({
           <SectionQuestionsDnd
             section={section}
             questionStartNumber={questionStartNumber}
+            onDropPaletteItem={onDropPaletteItem}
+            showDropTargets={showDropTargets}
             onChangeQuestions={(next) =>
               onChangeSection({ ...section, questions: next })
             }

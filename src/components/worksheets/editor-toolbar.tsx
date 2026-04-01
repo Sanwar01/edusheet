@@ -7,7 +7,6 @@ import {
   FileEdit,
   FileDown,
   Loader2,
-  Palette,
   Redo2,
   Save,
   Undo2,
@@ -26,8 +25,6 @@ interface EditorToolbarProps {
   canRedo: boolean;
   onUndo: () => void;
   onRedo: () => void;
-  showThemeSidebar: boolean;
-  setShowThemeSidebar: (show: boolean) => void;
   onSave: () => Promise<void> | void;
   onExportPdf: () => Promise<void> | void;
   isSaving: boolean;
@@ -46,8 +43,6 @@ export const EditorToolbar = ({
   canRedo,
   onUndo,
   onRedo,
-  showThemeSidebar,
-  setShowThemeSidebar,
   onSave,
   onExportPdf,
   isSaving,
@@ -120,7 +115,8 @@ export const EditorToolbar = ({
           </div>
 
           <div className="hidden rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 md:block">
-            Total points: <span className="font-semibold text-slate-800">{pointsTotal}</span>
+            Total points:{' '}
+            <span className="font-semibold text-slate-800">{pointsTotal}</span>
           </div>
 
           <div className="hidden items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 md:flex">
@@ -146,15 +142,6 @@ export const EditorToolbar = ({
             className="gap-1.5 text-xs"
           >
             {showAnswerKey ? 'Hide answers' : 'Show answers'}
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowThemeSidebar(!showThemeSidebar)}
-            className="gap-1.5 text-xs"
-          >
-            <Palette className="h-3.5 w-3.5" /> Theme
           </Button>
 
           <Button
