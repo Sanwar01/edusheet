@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { GRADE_LEVELS, SUBJECTS } from '@/constants';
+import { GRADE_LEVELS, SUBJECTS, type WorksheetType } from '@/constants';
 import { fetchJson } from '@/lib/api/client';
 import { EditorShell } from '@/components/worksheets/editor-shell';
 import { GenerateWorksheetResponseSchema } from '@/lib/validators/api';
@@ -15,6 +15,7 @@ export function NewWorksheetFlow() {
   const [topic, setTopic] = useState('');
   const [subject, setSubject] = useState(SUBJECTS[0] ?? '');
   const [gradeLevel, setGradeLevel] = useState(GRADE_LEVELS[5] ?? GRADE_LEVELS[0]);
+  const [worksheetType, setWorksheetType] = useState<WorksheetType>('practice');
   const [questionTypes, setQuestionTypes] = useState<string[]>([
     'multiple_choice',
     'short_answer',
@@ -42,6 +43,10 @@ export function NewWorksheetFlow() {
       toast.error('Select at least one question type.');
       return;
     }
+    if (!Number.isFinite(numQuestions) || numQuestions < 1 || numQuestions > 30) {
+      toast.error('Please choose between 1 and 30 questions.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -54,6 +59,7 @@ export function NewWorksheetFlow() {
             topic,
             subject,
             gradeLevel,
+            worksheetType,
             numQuestions,
             questionTypes,
             difficulty,
@@ -108,6 +114,7 @@ export function NewWorksheetFlow() {
         topic,
         subject,
         gradeLevel,
+        worksheetType,
         questionTypes,
         numQuestions,
         difficulty,
@@ -118,6 +125,7 @@ export function NewWorksheetFlow() {
         setTopic,
         setSubject,
         setGradeLevel,
+        setWorksheetType,
         setQuestionTypes,
         setNumQuestions,
         setDifficulty,

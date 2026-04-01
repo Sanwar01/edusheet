@@ -13,7 +13,13 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { GRADE_LEVELS, QUESTION_TYPES, SUBJECTS } from '@/constants';
+import {
+  GRADE_LEVELS,
+  QUESTION_TYPES,
+  SUBJECTS,
+  WORKSHEET_TYPES,
+  type WorksheetType,
+} from '@/constants';
 
 type Difficulty = 'easy' | 'medium' | 'hard' | 'mixed';
 
@@ -21,6 +27,7 @@ type GeneratorState = {
   topic: string;
   subject: string;
   gradeLevel: string;
+  worksheetType: WorksheetType;
   questionTypes: string[];
   numQuestions: number;
   difficulty: Difficulty;
@@ -32,6 +39,7 @@ type GeneratorActions = {
   setTopic: (value: string) => void;
   setSubject: (value: string) => void;
   setGradeLevel: (value: string) => void;
+  setWorksheetType: (value: WorksheetType) => void;
   setQuestionTypes: (value: string[]) => void;
   setNumQuestions: (value: number) => void;
   setDifficulty: (value: Difficulty) => void;
@@ -47,6 +55,18 @@ export function NewWorksheetGeneratorForm({
   state: GeneratorState;
   actions: GeneratorActions;
 }) {
+  const hasTopic = state.topic.trim().length > 1;
+  const hasSubject = state.subject.trim().length > 0;
+  const hasQuestionTypes = state.questionTypes.length > 0;
+  const hasValidQuestionCount =
+    Number.isFinite(state.numQuestions) &&
+    state.numQuestions >= 1 &&
+    state.numQuestions <= 30;
+  const canGenerate =
+    hasTopic && hasSubject && hasQuestionTypes && hasValidQuestionCount && !state.loading;
+  const instructionsLength = state.additionalInstructions.length;
+  const estimatedMinutes = Math.max(5, Math.round(state.numQuestions * 1.5));
+
   return (
     <div className="min-h-screen bg-background">
       <main className="container max-w-4xl py-8">
@@ -70,8 +90,25 @@ export function NewWorksheetGeneratorForm({
             Generate with AI
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Fill in the details and let AI create your worksheet.
+            Pick your settings and generate a teacher-ready worksheet draft.
           </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+            <span>
+              Questions: <span className="font-medium text-foreground">{state.numQuestions}</span>
+            </span>
+            <span>•</span>
+            <span>
+              Est. completion time:{' '}
+              <span className="font-medium text-foreground">~{estimatedMinutes} min</span>
+            </span>
+            <span>•</span>
+            <span>
+              Type:{' '}
+              <span className="font-medium text-foreground">
+                {WORKSHEET_TYPES.find((t) => t.id === state.worksheetType)?.label}
+              </span>
+            </span>
+          </div>
 
           <div className="mt-6 space-y-5">
             <div className="space-y-2">
@@ -81,6 +118,11 @@ export function NewWorksheetGeneratorForm({
                 onChange={(e) => actions.setTopic(e.target.value)}
                 placeholder="e.g. Photosynthesis, Fractions, World War II"
               />
+              {!hasTopic ? (
+                <p className="text-xs text-amber-600">
+                  Add a clear topic so the AI can generate focused questions.
+                </p>
+              ) : null}
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -98,6 +140,9 @@ export function NewWorksheetGeneratorForm({
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  Helps match vocabulary and curriculum style.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label>Grade Level</Label>
@@ -116,10 +161,34 @@ export function NewWorksheetGeneratorForm({
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  AI adjusts complexity and reading level.
+                </p>
               </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Worksheet Type</Label>
+                <Select
+                  value={state.worksheetType}
+                  onValueChange={(v: WorksheetType) => actions.setWorksheetType(v)}
+                >
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Select worksheet type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {WORKSHEET_TYPES.map((type) => (
+                      <SelectItem key={type.id} value={type.id}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Sets tone and rigor for generated questions.
+                </p>
+              </div>
               <div className="space-y-2">
                 <Label>Number of Questions</Label>
                 <Input
@@ -129,6 +198,25 @@ export function NewWorksheetGeneratorForm({
                   value={state.numQuestions}
                   onChange={(e) => actions.setNumQuestions(Number(e.target.value))}
                 />
+                <div className="flex flex-wrap gap-2">
+                  {[5, 10, 15].map((count) => (
+                    <Button
+                      key={count}
+                      type="button"
+                      size="sm"
+                      variant={state.numQuestions === count ? 'default' : 'outline'}
+                      className="h-7 px-2 text-xs"
+                      onClick={() => actions.setNumQuestions(count)}
+                    >
+                      {count} Qs
+                    </Button>
+                  ))}
+                </div>
+                {!hasValidQuestionCount ? (
+                  <p className="text-xs text-rose-600">
+                    Enter between 1 and 30 questions.
+                  </p>
+                ) : null}
               </div>
               <div className="space-y-2">
                 <Label>Difficulty</Label>
@@ -146,6 +234,9 @@ export function NewWorksheetGeneratorForm({
                     <SelectItem value="mixed">Mixed</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  Mixed is best for differentiated classroom practice.
+                </p>
               </div>
             </div>
 
@@ -155,7 +246,11 @@ export function NewWorksheetGeneratorForm({
                 {QUESTION_TYPES.map((qt) => (
                   <label
                     key={qt.id}
-                    className="cursor-pointer rounded-lg border p-3 transition-colors hover:bg-muted/50"
+                    className={`cursor-pointer rounded-lg border p-3 transition-colors ${
+                      state.questionTypes.includes(qt.id)
+                        ? 'border-primary/50 bg-primary/5'
+                        : 'hover:bg-muted/50'
+                    }`}
                   >
                     <div className="flex items-center gap-2">
                       <Checkbox
@@ -175,6 +270,15 @@ export function NewWorksheetGeneratorForm({
                   </label>
                 ))}
               </div>
+              {!hasQuestionTypes ? (
+                <p className="text-xs text-rose-600">
+                  Select at least one question type.
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Tip: choose 2-3 types for balanced worksheets.
+                </p>
+              )}
             </div>
 
             <div className="space-y-2 border-t pt-2">
@@ -184,14 +288,19 @@ export function NewWorksheetGeneratorForm({
                 onChange={(e) => actions.setAdditionalInstructions(e.target.value)}
                 placeholder="e.g. Include a bonus question, make it fun and engaging, focus on vocabulary..."
                 rows={3}
+                maxLength={1000}
               />
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>Optional teacher notes for tone, style, or constraints.</span>
+                <span>{instructionsLength}/1000</span>
+              </div>
             </div>
 
             <div className="flex flex-col gap-3 pt-2 sm:flex-row">
               <Button
                 className="flex-1 gap-2"
                 onClick={actions.onGenerate}
-                disabled={state.loading}
+                disabled={!canGenerate}
               >
                 {state.loading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -201,6 +310,11 @@ export function NewWorksheetGeneratorForm({
                 {state.loading ? 'Generating…' : 'Generate with AI'}
               </Button>
             </div>
+            {!canGenerate ? (
+              <p className="text-xs text-muted-foreground">
+                Complete topic, question count, and question type selections to generate.
+              </p>
+            ) : null}
           </div>
         </div>
       </main>

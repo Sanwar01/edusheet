@@ -7,6 +7,7 @@ Generate a worksheet with:
 - Topic: ${input.topic}
 - Subject: ${input.subject}
 - Grade Level: ${input.gradeLevel}
+- Worksheet Type: ${input.worksheetType}
 - Number of Questions: ${input.numberOfQuestions}
 - Allowed Question Types: ${input.questionTypes.join(', ')}
 - Difficulty: ${input.difficulty}
