@@ -9,7 +9,14 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import type { WorksheetContent } from '@/types/worksheet';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import type { SectionLayoutConfig, WorksheetContent } from '@/types/worksheet';
 import { SortableSectionShell } from '@/components/worksheets/sortable-blocks';
 import { SectionQuestionsDnd } from '@/components/worksheets/section-questions-dnd';
 import type { PaletteItemType } from '@/components/worksheets/editor-dnd-types';
@@ -27,6 +34,8 @@ export const WorksheetSectionCard = ({
   onAddQuestion,
   onDropPaletteItem,
   showDropTargets,
+  sectionLayout,
+  onSectionLayoutChange,
 }: {
   section: WorksheetContent['sections'][number];
   sectionNumber: number;
@@ -40,6 +49,8 @@ export const WorksheetSectionCard = ({
   onAddQuestion: () => void;
   onDropPaletteItem: (type: PaletteItemType, insertIndex?: number) => void;
   showDropTargets: boolean;
+  sectionLayout: SectionLayoutConfig;
+  onSectionLayoutChange: (partial: Partial<SectionLayoutConfig>) => void;
 }) => {
   return (
     <SortableSectionShell
@@ -101,11 +112,78 @@ export const WorksheetSectionCard = ({
 
       {!isCollapsed && (
         <>
+          <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-slate-100 bg-slate-50/80 px-2 py-2">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+              Question layout
+            </span>
+            <Select
+              value={sectionLayout.mode}
+              onValueChange={(value) => {
+                const mode = value as SectionLayoutConfig['mode'];
+                onSectionLayoutChange(
+                  mode === 'grid'
+                    ? {
+                        mode: 'grid',
+                        gridColumns: sectionLayout.gridColumns ?? 2,
+                      }
+                    : { mode: 'stack', gridColumns: undefined },
+                );
+              }}
+            >
+              <SelectTrigger className="h-8 w-[130px] bg-white text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="stack">Single column</SelectItem>
+                <SelectItem value="grid">Grid</SelectItem>
+              </SelectContent>
+            </Select>
+            {sectionLayout.mode === 'grid' ? (
+              <>
+                <Select
+                  value={String(sectionLayout.gridColumns ?? 2)}
+                  onValueChange={(v) =>
+                    onSectionLayoutChange({
+                      gridColumns: Number(v) as 2 | 3 | 4,
+                    })
+                  }
+                >
+                  <SelectTrigger className="h-8 w-[100px] bg-white text-xs">
+                    <SelectValue placeholder="Cols" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="2">2 columns</SelectItem>
+                    <SelectItem value="3">3 columns</SelectItem>
+                    <SelectItem value="4">4 columns</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={sectionLayout.border ?? 'none'}
+                  onValueChange={(value) =>
+                    onSectionLayoutChange({
+                      border: value as SectionLayoutConfig['border'],
+                    })
+                  }
+                >
+                  <SelectTrigger className="h-8 w-[120px] bg-white text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No border</SelectItem>
+                    <SelectItem value="outer">Outer border</SelectItem>
+                    <SelectItem value="cells">Cell borders</SelectItem>
+                  </SelectContent>
+                </Select>
+              </>
+            ) : null}
+          </div>
+
           <SectionQuestionsDnd
             section={section}
             questionStartNumber={questionStartNumber}
             onDropPaletteItem={onDropPaletteItem}
             showDropTargets={showDropTargets}
+            sectionLayout={sectionLayout}
             onChangeQuestions={(next) =>
               onChangeSection({ ...section, questions: next })
             }

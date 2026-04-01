@@ -4,7 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { PanelLeftOpen, PanelRightOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { WorksheetContent, WorksheetTheme } from '@/types/worksheet';
+import type {
+  SectionLayoutConfig,
+  WorksheetContent,
+  WorksheetLayout,
+  WorksheetTheme,
+} from '@/types/worksheet';
+import { buildWorksheetLayout, defaultSectionLayout } from '@/features/worksheets/layout';
 import { EditorToolbar } from './editor-toolbar';
 import { ThemeSettingsSidebar } from './theme-settings-sidebar';
 import { WorksheetContentSchema } from '@/lib/validators/worksheet';
@@ -40,6 +46,7 @@ import { EditorEditPane } from '@/components/worksheets/editor-edit-pane';
 type EditorSnapshot = {
   content: WorksheetContent;
   theme: WorksheetTheme;
+  sectionLayoutOverrides: Record<string, SectionLayoutConfig>;
   sectionCollapsed: Record<string, boolean>;
   showAnswerKey: boolean;
 };
@@ -53,16 +60,21 @@ export const EditorShell = ({
   worksheetId,
   initialContent,
   initialTheme,
+  initialLayout,
 }: {
   worksheetId?: string;
   initialContent: WorksheetContent;
   initialTheme: WorksheetTheme;
+  initialLayout: WorksheetLayout;
 }) => {
   const [resolvedWorksheetId, setResolvedWorksheetId] = useState<string | null>(
     worksheetId ?? null,
   );
   const [content, setContent] = useState(initialContent);
   const [theme, setTheme] = useState(initialTheme);
+  const [sectionLayoutOverrides, setSectionLayoutOverrides] = useState<
+    Record<string, SectionLayoutConfig>
+  >(() => ({ ...initialLayout.sectionLayouts }));
   const [showThemeSidebar, setShowThemeSidebar] = useState(true);
   const [showWorksheetSidebar, setShowWorksheetSidebar] = useState(true);
   const [showAnswerKey, setShowAnswerKey] = useState(false);
@@ -83,6 +95,7 @@ export const EditorShell = ({
   });
   const contentRef = useRef(content);
   const themeRef = useRef(theme);
+  const sectionLayoutOverridesRef = useRef(sectionLayoutOverrides);
   const sectionCollapsedRef = useRef(sectionCollapsed);
   const showAnswerKeyRef = useRef(showAnswerKey);
 
@@ -100,6 +113,17 @@ export const EditorShell = ({
     [pointsBySection],
   );
 
+  const layout = useMemo(
+    () =>
+      buildWorksheetLayout(content, theme.spacingPreset, {
+        sectionOrder: [],
+        questionOrderBySection: {},
+        spacingPreset: theme.spacingPreset,
+        sectionLayouts: sectionLayoutOverrides,
+      }),
+    [content, theme.spacingPreset, sectionLayoutOverrides],
+  );
+
   useEffect(() => {
     contentRef.current = content;
   }, [content]);
@@ -107,6 +131,10 @@ export const EditorShell = ({
   useEffect(() => {
     themeRef.current = theme;
   }, [theme]);
+
+  useEffect(() => {
+    sectionLayoutOverridesRef.current = sectionLayoutOverrides;
+  }, [sectionLayoutOverrides]);
 
   useEffect(() => {
     sectionCollapsedRef.current = sectionCollapsed;
@@ -122,6 +150,9 @@ export const EditorShell = ({
         JSON.stringify(contentRef.current),
       ) as WorksheetContent,
       theme: { ...themeRef.current },
+      sectionLayoutOverrides: JSON.parse(
+        JSON.stringify(sectionLayoutOverridesRef.current),
+      ) as Record<string, SectionLayoutConfig>,
       sectionCollapsed: { ...sectionCollapsedRef.current },
       showAnswerKey: showAnswerKeyRef.current,
     };
@@ -140,6 +171,7 @@ export const EditorShell = ({
     restoringHistoryRef.current = true;
     setContent(snapshot.content);
     setTheme(snapshot.theme);
+    setSectionLayoutOverrides(snapshot.sectionLayoutOverrides);
     setSectionCollapsed(snapshot.sectionCollapsed);
     setShowAnswerKey(snapshot.showAnswerKey);
     setIsDirty(true);
@@ -203,6 +235,18 @@ export const EditorShell = ({
           ? (next as (prev: WorksheetTheme) => WorksheetTheme)(prev)
           : next,
       );
+      markDirty();
+    },
+    [recordHistory],
+  );
+
+  const updateSectionLayout = useCallback(
+    (sectionId: string, partial: Partial<SectionLayoutConfig>) => {
+      recordHistory();
+      setSectionLayoutOverrides((prev) => {
+        const cur = prev[sectionId] ?? defaultSectionLayout();
+        return { ...prev, [sectionId]: { ...cur, ...partial } };
+      });
       markDirty();
     },
     [recordHistory],
@@ -290,6 +334,7 @@ export const EditorShell = ({
     useWorksheetPersistence({
       content,
       theme,
+      layout,
       resolvedWorksheetId,
       setResolvedWorksheetId: (id) => setResolvedWorksheetId(id),
       isDirty,
@@ -309,7 +354,18 @@ export const EditorShell = ({
   const duplicateSection = useCallback(
     (sectionId: string) => {
       recordHistory();
-      setContent((prev) => duplicateSectionAction(prev, sectionId));
+      setContent((prev) => {
+        const r = duplicateSectionAction(prev, sectionId);
+        if (r.newSectionId) {
+          setSectionLayoutOverrides((prevLayouts) => {
+            const next = { ...prevLayouts };
+            const src = prevLayouts[sectionId];
+            if (src && r.newSectionId) next[r.newSectionId] = { ...src };
+            return next;
+          });
+        }
+        return r.content;
+      });
       setSectionCollapsed((prev) => ({ ...prev, [sectionId]: prev[sectionId] ?? false }));
       markDirty();
     },
@@ -337,6 +393,7 @@ export const EditorShell = ({
   const editPaneModel = {
     content,
     theme,
+    layout,
     contentFontClass,
     sectionSpacingClass,
     pointsBySection,
@@ -361,6 +418,7 @@ export const EditorShell = ({
     addQuestionToSection,
     insertSectionAt,
     setIsPaletteDragging,
+    updateSectionLayout,
   };
 
   return (
@@ -428,6 +486,7 @@ export const EditorShell = ({
               <EditorPreviewPane
                 content={content}
                 theme={theme}
+                layout={layout}
                 contentFontClass={contentFontClass}
                 sectionSpacingClass={sectionSpacingClass}
                 questionSpacingClass={questionSpacingClass}

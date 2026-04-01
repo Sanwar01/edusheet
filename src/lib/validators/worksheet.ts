@@ -60,10 +60,20 @@ export const WorksheetContentSchema = z.object({
   sections: z.array(SectionSchema).default([]),
 });
 
+const SectionLayoutConfigSchema = z.object({
+  mode: z.enum(['stack', 'grid']),
+  gridColumns: z.union([z.literal(2), z.literal(3), z.literal(4)]).optional(),
+  border: z.enum(['none', 'outer', 'cells']).optional(),
+});
+
 export const LayoutSchema = z.object({
   sectionOrder: z.array(z.string()).default([]),
   questionOrderBySection: z.record(z.string(), z.array(z.string())).default({}),
   spacingPreset: z.enum(['compact', 'comfortable', 'spacious']).default('comfortable'),
+  sectionLayouts: z
+    .record(z.string(), SectionLayoutConfigSchema)
+    .optional()
+    .default({}),
 });
 
 export const ThemeSchema = z.object({
@@ -73,6 +83,11 @@ export const ThemeSchema = z.object({
   primaryColor: z.string().default('#2563eb'),
   textColor: z.string().default('#111827'),
   spacingPreset: z.enum(['compact', 'comfortable', 'spacious']).default('comfortable'),
+  headerStyle: z.enum(['default', 'lesson']).default('default'),
+  showNameLine: z.boolean().default(true),
+  optionLayout: z.enum(['vertical', 'horizontal']).default('vertical'),
+  promptFontWeight: z.enum(['normal', 'medium', 'semibold']).default('medium'),
+  answerTextColor: z.string().default('#64748b'),
 });
 
 export const CreateWorksheetSchema = z.object({

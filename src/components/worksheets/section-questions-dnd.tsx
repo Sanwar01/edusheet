@@ -12,6 +12,7 @@ import {
 import {
   SortableContext,
   arrayMove,
+  rectSortingStrategy,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { ChevronDown, ChevronRight, Copy, Trash2 } from 'lucide-react';
@@ -27,9 +28,12 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import type {
   QuestionType,
+  SectionLayoutConfig,
   WorksheetContent,
   WorksheetQuestion,
 } from '@/types/worksheet';
+import { defaultSectionLayout } from '@/features/worksheets/layout';
+import { cn } from '@/lib/utils';
 import { SortableQuestionShell } from '@/components/worksheets/sortable-blocks';
 import { duplicateQuestion } from '@/components/worksheets/editor-shell.helpers';
 import {
@@ -103,12 +107,14 @@ export const SectionQuestionsDnd = ({
   questionStartNumber,
   onDropPaletteItem,
   showDropTargets,
+  sectionLayout = defaultSectionLayout(),
 }: {
   section: WorksheetContent['sections'][number];
   onChangeQuestions: (next: WorksheetQuestion[]) => void;
   questionStartNumber: number;
   onDropPaletteItem: (type: PaletteItemType, insertIndex?: number) => void;
   showDropTargets: boolean;
+  sectionLayout?: SectionLayoutConfig;
 }) => {
   const [collapsedByQuestionId, setCollapsedByQuestionId] = useState<
     Record<string, boolean>
@@ -116,6 +122,18 @@ export const SectionQuestionsDnd = ({
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
+
+  const isGrid = sectionLayout.mode === 'grid';
+  const gridCols = sectionLayout.gridColumns ?? 2;
+  const gridColsClass =
+    gridCols === 2
+      ? 'grid-cols-1 sm:grid-cols-2'
+      : gridCols === 3
+        ? 'grid-cols-1 sm:grid-cols-3'
+        : 'grid-cols-2 sm:grid-cols-4';
+  const sortStrategy = isGrid
+    ? rectSortingStrategy
+    : verticalListSortingStrategy;
 
   const onDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -157,11 +175,30 @@ export const SectionQuestionsDnd = ({
       >
         <SortableContext
           items={section.questions.map((q) => q.id)}
-          strategy={verticalListSortingStrategy}
+          strategy={sortStrategy}
         >
-          <div className="space-y-2.5">
+          <div
+            className={cn(
+              isGrid &&
+                sectionLayout.border === 'outer' &&
+                'rounded-lg border-2 border-slate-300 p-3',
+            )}
+          >
+            <div
+              className={cn(
+                isGrid ? `grid gap-2 ${gridColsClass}` : 'space-y-2.5',
+              )}
+            >
             {section.questions.map((question, index) => (
-              <div key={question.id} className="space-y-2">
+              <div
+                key={question.id}
+                className={cn(
+                  'space-y-2',
+                  isGrid &&
+                    sectionLayout.border === 'cells' &&
+                    'rounded-md border border-slate-200 bg-white p-2',
+                )}
+              >
                 {showDropTargets ? (
                   <div
                     onDragOver={(event) => event.preventDefault()}
@@ -503,6 +540,7 @@ export const SectionQuestionsDnd = ({
                 </SortableQuestionShell>
               </div>
             ))}
+            </div>
           </div>
         </SortableContext>
       </DndContext>

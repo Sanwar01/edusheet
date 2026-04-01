@@ -1,5 +1,14 @@
 import type { WorksheetTheme } from '@/types/worksheet';
 
+export const promptFontWeightClassMap: Record<
+  WorksheetTheme['promptFontWeight'],
+  string
+> = {
+  normal: 'font-normal',
+  medium: 'font-medium',
+  semibold: 'font-semibold',
+};
+
 export const fontFamilyClassMap: Record<WorksheetTheme['fontFamily'], string> = {
   inter: 'font-sans',
   lora: 'font-serif',

@@ -185,19 +185,23 @@ export function addFromPalette(
 export function duplicateSection(
   content: WorksheetContent,
   sectionId: string,
-): WorksheetContent {
+): { content: WorksheetContent; newSectionId: string | null } {
   const section = content.sections.find((s) => s.id === sectionId);
-  if (!section) return content;
+  if (!section) return { content, newSectionId: null };
+  const newSectionId = newId('sec');
   return {
-    ...content,
-    sections: [
-      ...content.sections,
-      {
-        ...section,
-        id: newId('sec'),
-        questions: section.questions.map((q) => ({ ...q, id: newId('q') })),
-      },
-    ],
+    content: {
+      ...content,
+      sections: [
+        ...content.sections,
+        {
+          ...section,
+          id: newSectionId,
+          questions: section.questions.map((q) => ({ ...q, id: newId('q') })),
+        },
+      ],
+    },
+    newSectionId,
   };
 }
 

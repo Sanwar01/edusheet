@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import type { WorksheetContent, WorksheetTheme } from '@/types/worksheet';
+import type { WorksheetContent, WorksheetLayout, WorksheetTheme } from '@/types/worksheet';
 import { buildLayoutPayload } from '@/components/worksheets/editor-shell.helpers';
 import { fetchJson, getApiErrorMessage } from '@/lib/api/client';
 import { CreateWorksheetResponseSchema } from '@/lib/validators/api';
@@ -9,6 +9,7 @@ import { CreateWorksheetResponseSchema } from '@/lib/validators/api';
 export function useWorksheetPersistence({
   content,
   theme,
+  layout,
   resolvedWorksheetId,
   setResolvedWorksheetId,
   isDirty,
@@ -18,6 +19,7 @@ export function useWorksheetPersistence({
 }: {
   content: WorksheetContent;
   theme: WorksheetTheme;
+  layout: WorksheetLayout;
   resolvedWorksheetId: string | null;
   setResolvedWorksheetId: (id: string) => void;
   isDirty: boolean;
@@ -55,7 +57,11 @@ export function useWorksheetPersistence({
         setIsSaving(true);
         setSaveState('idle');
 
-        const layout = buildLayoutPayload(content, theme.spacingPreset);
+        const layoutPayload = buildLayoutPayload(
+          content,
+          theme.spacingPreset,
+          layout,
+        );
         let res: Response;
         if (resolvedWorksheetId) {
           res = await fetch(`/api/worksheets/${resolvedWorksheetId}`, {
@@ -64,7 +70,7 @@ export function useWorksheetPersistence({
             body: JSON.stringify({
               title: content.title,
               content_json: content,
-              layout_json: layout,
+              layout_json: layoutPayload,
               theme_json: theme,
             }),
           });
@@ -79,7 +85,7 @@ export function useWorksheetPersistence({
                 subject: 'General',
                 grade_level: '5',
                 content_json: content,
-                layout_json: layout,
+                layout_json: layoutPayload,
                 theme_json: theme,
               }),
             },
@@ -134,6 +140,7 @@ export function useWorksheetPersistence({
       setIsDirty,
       setResolvedWorksheetId,
       theme,
+      layout,
       validateContentForSave,
     ],
   );
@@ -214,7 +221,7 @@ export function useWorksheetPersistence({
         clearTimeout(autosaveTimerRef.current);
       }
     };
-  }, [content, isDirty, saveDraft, theme]);
+  }, [content, isDirty, saveDraft, theme, layout]);
 
   return {
     isSaving,

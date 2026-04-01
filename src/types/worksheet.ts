@@ -42,10 +42,21 @@ export interface WorksheetContent {
   sections: WorksheetSection[];
 }
 
+/** Per-section visual layout (questions within the section). */
+export interface SectionLayoutConfig {
+  mode: 'stack' | 'grid';
+  /** Used when mode is grid (2–4 columns). */
+  gridColumns?: 2 | 3 | 4;
+  /** Border treatment for grid-style sections. */
+  border?: 'none' | 'outer' | 'cells';
+}
+
 export interface WorksheetLayout {
   sectionOrder: string[];
   questionOrderBySection: Record<string, string[]>;
   spacingPreset: 'compact' | 'comfortable' | 'spacious';
+  /** Per-section layout; missing keys at runtime default to stack via buildWorksheetLayout. */
+  sectionLayouts: Record<string, SectionLayoutConfig>;
 }
 
 export interface WorksheetTheme {
@@ -55,4 +66,14 @@ export interface WorksheetTheme {
   primaryColor: string;
   textColor: string;
   spacingPreset: 'compact' | 'comfortable' | 'spacious';
+  /** Page header: default title block vs lesson handout (title + name line). */
+  headerStyle: 'default' | 'lesson';
+  /** When headerStyle is lesson, show a Name: _______ line on the right. */
+  showNameLine: boolean;
+  /** How multiple choice / true-false options appear in preview & export. */
+  optionLayout: 'vertical' | 'horizontal';
+  /** Weight for question prompts in preview & export. */
+  promptFontWeight: 'normal' | 'medium' | 'semibold';
+  /** Muted color for options, answer lines, and secondary labels. */
+  answerTextColor: string;
 }

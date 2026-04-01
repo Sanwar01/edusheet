@@ -133,6 +133,97 @@ export const ThemeSettingsSidebar = ({
       </div>
 
       <div className="space-y-1.5">
+        <label className="text-xs font-medium text-slate-600">Page header</label>
+        <p className="text-xs text-slate-500">
+          Lesson style matches a typical handout (title and name line).
+        </p>
+        <Select
+          value={theme.headerStyle}
+          onValueChange={(value) =>
+            setTheme((t) => ({
+              ...t,
+              headerStyle: value as WorksheetTheme['headerStyle'],
+            }))
+          }
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="default">Title and instructions</SelectItem>
+            <SelectItem value="lesson">Lesson handout</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {theme.headerStyle === 'lesson' ? (
+        <div className="flex items-center justify-between gap-2 rounded-md border border-slate-100 bg-slate-50 px-3 py-2">
+          <span className="text-xs text-slate-600">Show name line</span>
+          <Button
+            type="button"
+            variant={theme.showNameLine ? 'default' : 'outline'}
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() =>
+              setTheme((t) => ({ ...t, showNameLine: !t.showNameLine }))
+            }
+          >
+            {theme.showNameLine ? 'On' : 'Off'}
+          </Button>
+        </div>
+      ) : null}
+
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-slate-600">
+          Answer options layout
+        </label>
+        <p className="text-xs text-slate-500">
+          Multiple choice and true or false in preview and PDF.
+        </p>
+        <Select
+          value={theme.optionLayout}
+          onValueChange={(value) =>
+            setTheme((t) => ({
+              ...t,
+              optionLayout: value as WorksheetTheme['optionLayout'],
+            }))
+          }
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="vertical">Vertical list</SelectItem>
+            <SelectItem value="horizontal">Horizontal row</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-slate-600">
+          Question prompt weight
+        </label>
+        <Select
+          value={theme.promptFontWeight}
+          onValueChange={(value) =>
+            setTheme((t) => ({
+              ...t,
+              promptFontWeight: value as WorksheetTheme['promptFontWeight'],
+            }))
+          }
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="normal">Normal</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="semibold">Semibold</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-1.5">
         <label className="text-xs font-medium text-slate-600">
           Accent color
         </label>
@@ -146,12 +237,28 @@ export const ThemeSettingsSidebar = ({
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-slate-600">Text color</label>
+        <label className="text-xs font-medium text-slate-600">Main text color</label>
         <Input
           type="color"
           value={theme.textColor}
           onChange={(e) =>
             setTheme((t) => ({ ...t, textColor: e.target.value }))
+          }
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-slate-600">
+          Options and secondary text
+        </label>
+        <p className="text-xs text-slate-500">
+          Used for choices, answer lines, and labels in preview and export.
+        </p>
+        <Input
+          type="color"
+          value={theme.answerTextColor}
+          onChange={(e) =>
+            setTheme((t) => ({ ...t, answerTextColor: e.target.value }))
           }
         />
       </div>

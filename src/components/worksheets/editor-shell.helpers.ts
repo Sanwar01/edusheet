@@ -15,8 +15,9 @@ export const newId = (prefix: string) => {
 export const buildLayoutPayload = (
   content: WorksheetContent,
   spacingPreset: WorksheetLayout['spacingPreset'],
+  previousLayout: WorksheetLayout | null,
 ): WorksheetLayout => {
-  return buildWorksheetLayout(content, spacingPreset);
+  return buildWorksheetLayout(content, spacingPreset, previousLayout);
 };
 
 export const duplicateQuestion = (

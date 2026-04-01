@@ -8,6 +8,11 @@ export const defaultTheme: WorksheetTheme = {
   primaryColor: '#2563eb',
   textColor: '#111827',
   spacingPreset: 'comfortable',
+  headerStyle: 'default',
+  showNameLine: true,
+  optionLayout: 'vertical',
+  promptFontWeight: 'medium',
+  answerTextColor: '#64748b',
 };
 
 export function defaultContent(topic = 'New Topic'): WorksheetContent {
@@ -33,5 +38,5 @@ export function defaultContent(topic = 'New Topic'): WorksheetContent {
 }
 
 export function buildLayout(content: WorksheetContent): WorksheetLayout {
-  return buildWorksheetLayout(content, 'comfortable');
+  return buildWorksheetLayout(content, 'comfortable', null);
 }

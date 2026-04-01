@@ -8,6 +8,7 @@ import { fetchJson } from '@/lib/api/client';
 import { EditorShell } from '@/components/worksheets/editor-shell';
 import { GenerateWorksheetResponseSchema } from '@/lib/validators/api';
 import { NewWorksheetGeneratorForm } from '@/features/worksheets/components/new-worksheet-generator-form';
+import { buildLayout, defaultTheme } from '@/features/worksheets/defaults';
 
 export function NewWorksheetFlow() {
   const router = useRouter();
@@ -89,21 +90,16 @@ export function NewWorksheetFlow() {
   };
 
   if (isBlankMode) {
+    const blankContent = {
+      title: blankTitle,
+      instructions: '',
+      sections: [],
+    };
     return (
       <EditorShell
-        initialContent={{
-          title: blankTitle,
-          instructions: '',
-          sections: [],
-        }}
-        initialTheme={{
-          headingFontSize: 28,
-          bodyFontSize: 16,
-          fontFamily: 'inter',
-          primaryColor: '#2563eb',
-          textColor: '#111827',
-          spacingPreset: 'comfortable',
-        }}
+        initialContent={blankContent}
+        initialTheme={defaultTheme}
+        initialLayout={buildLayout(blankContent)}
       />
     );
   }

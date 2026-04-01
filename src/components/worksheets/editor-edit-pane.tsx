@@ -17,7 +17,13 @@ import {
   PALETTE_DRAG_MIME,
   type PaletteItemType,
 } from '@/components/worksheets/editor-dnd-types';
-import type { WorksheetContent, WorksheetTheme } from '@/types/worksheet';
+import type {
+  SectionLayoutConfig,
+  WorksheetContent,
+  WorksheetLayout,
+  WorksheetTheme,
+} from '@/types/worksheet';
+import { defaultSectionLayout } from '@/features/worksheets/layout';
 
 type CompletionState = {
   hasTitle: boolean;
@@ -31,6 +37,7 @@ type CompletionState = {
 type EditPaneModel = {
   content: WorksheetContent;
   theme: WorksheetTheme;
+  layout: WorksheetLayout;
   contentFontClass: string;
   sectionSpacingClass: string;
   pointsBySection: Record<string, number>;
@@ -68,6 +75,10 @@ type EditPaneCommands = {
   addQuestionToSection: (sectionId: string) => void;
   insertSectionAt: (insertIndex: number) => void;
   setIsPaletteDragging: (next: boolean) => void;
+  updateSectionLayout: (
+    sectionId: string,
+    partial: Partial<SectionLayoutConfig>,
+  ) => void;
 };
 
 export function EditorEditPane({
@@ -147,22 +158,52 @@ export function EditorEditPane({
           fontSize: model.theme.bodyFontSize,
         }}
       >
-        <input
-          id="worksheet_title"
-          value={model.content.title}
-          onChange={(e) => {
-            commands.setContentWithHistory((prev) => ({
-              ...prev,
-              title: e.target.value,
-            }));
-          }}
-          className="w-full border-none bg-transparent text-2xl font-bold text-slate-900 outline-none md:text-3xl"
-          style={{
-            fontSize: model.theme.headingFontSize,
-            color: model.theme.primaryColor,
-          }}
-          placeholder="Worksheet title"
-        />
+        {model.theme.headerStyle === 'lesson' ? (
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 pb-4">
+            <input
+              id="worksheet_title"
+              value={model.content.title}
+              onChange={(e) => {
+                commands.setContentWithHistory((prev) => ({
+                  ...prev,
+                  title: e.target.value,
+                }));
+              }}
+              className="min-w-[200px] flex-1 border-none bg-transparent text-2xl font-bold text-slate-900 outline-none md:text-3xl"
+              style={{
+                fontSize: model.theme.headingFontSize,
+                color: model.theme.primaryColor,
+              }}
+              placeholder="Worksheet title"
+            />
+            {model.theme.showNameLine ? (
+              <div
+                className="shrink-0 text-sm"
+                style={{ color: model.theme.textColor }}
+              >
+                Name:{' '}
+                <span className="inline-block min-w-[12rem] border-b border-slate-400 pb-0.5 align-bottom" />
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <input
+            id="worksheet_title"
+            value={model.content.title}
+            onChange={(e) => {
+              commands.setContentWithHistory((prev) => ({
+                ...prev,
+                title: e.target.value,
+              }));
+            }}
+            className="w-full border-none bg-transparent text-2xl font-bold text-slate-900 outline-none md:text-3xl"
+            style={{
+              fontSize: model.theme.headingFontSize,
+              color: model.theme.primaryColor,
+            }}
+            placeholder="Worksheet title"
+          />
+        )}
 
         <textarea
           id="worksheet_instructions"
@@ -269,6 +310,13 @@ export function EditorEditPane({
                           )
                         }
                         showDropTargets={model.isPaletteDragging}
+                        sectionLayout={
+                          model.layout.sectionLayouts[section.id] ??
+                          defaultSectionLayout()
+                        }
+                        onSectionLayoutChange={(partial) =>
+                          commands.updateSectionLayout(section.id, partial)
+                        }
                         onDuplicateSection={() =>
                           commands.duplicateSection(section.id)
                         }
