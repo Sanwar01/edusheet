@@ -3,11 +3,17 @@ import { Crown, LogOut } from 'lucide-react';
 import { Button } from '../ui/button';
 import { requireUser } from '@/features/auth/guards';
 import Link from 'next/link';
+import { isProPlan } from '@/features/billing/limits';
 
 export const DashboardNavbar = async () => {
-  const { profile } = await requireUser();
+  const { user, supabase } = await requireUser();
 
-  const isPro = profile?.plan === 'pro';
+  const { data: subscription } = await supabase
+    .from('subscriptions')
+    .select('plan,status')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  const isPro = isProPlan(subscription?.plan, subscription?.status);
   return (
     <header className="border-b bg-white">
       <div className="container flex items-center justify-between py-3">

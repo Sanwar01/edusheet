@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   DndContext,
@@ -59,9 +59,11 @@ export const EditorShell = ({
   const [showThemeSidebar, setShowThemeSidebar] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'saved' | 'error'>(
     'idle',
   );
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -101,6 +103,11 @@ export const EditorShell = ({
   const contentFontClass = fontFamilyClassMap[theme.fontFamily];
   const sectionSpacingClass = sectionSpacingClassMap[theme.spacingPreset];
 
+  const markDirty = () => {
+    setIsDirty(true);
+    setSaveState('idle');
+  };
+
   const updateSectionById = (
     sectionId: string,
     updater: (
@@ -113,7 +120,7 @@ export const EditorShell = ({
         section.id === sectionId ? updater(section) : section,
       ),
     }));
-    setSaveState('idle');
+    markDirty();
   };
 
   const onSectionsDragEnd = (event: DragEndEvent) => {
@@ -127,7 +134,7 @@ export const EditorShell = ({
       ...prev,
       sections: arrayMove(prev.sections, oldIndex, newIndex),
     }));
-    setSaveState('idle');
+    markDirty();
   };
 
   const addSection = () => {
@@ -143,7 +150,7 @@ export const EditorShell = ({
         },
       ],
     }));
-    setSaveState('idle');
+    markDirty();
   };
 
   const addQuestionToSection = (sectionId: string) => {
@@ -161,11 +168,13 @@ export const EditorShell = ({
     }));
   };
 
-  const saveDraft = async () => {
+  const saveDraft = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
     if (isSaving) return;
     if (!content.title.trim()) {
-      toast.error('Please add a worksheet title before saving.');
-      setSaveState('error');
+      if (!silent) {
+        toast.error('Please add a worksheet title before saving.');
+        setSaveState('error');
+      }
       return;
     }
 
@@ -206,7 +215,10 @@ export const EditorShell = ({
         setResolvedWorksheetId(created.data.id);
         router.replace(`/dashboard/worksheets/${created.data.id}/edit`);
         setSaveState('saved');
-        toast.success('Worksheet created');
+        setIsDirty(false);
+        if (!silent) {
+          toast.success('Worksheet created');
+        }
         return;
       }
 
@@ -217,19 +229,24 @@ export const EditorShell = ({
       }
 
       setSaveState('saved');
-      toast.success('Worksheet saved');
+      setIsDirty(false);
+      if (!silent) {
+        toast.success('Worksheet saved');
+      }
     } catch (error) {
       setSaveState('error');
-      toast.error('Save failed', {
-        description:
-          error instanceof Error
-            ? error.message
-            : 'Could not save your worksheet.',
-      });
+      if (!silent) {
+        toast.error('Save failed', {
+          description:
+            error instanceof Error
+              ? error.message
+              : 'Could not save your worksheet.',
+        });
+      }
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [content, isSaving, resolvedWorksheetId, router, theme]);
 
   const exportPdf = async () => {
     if (isExporting) return;
@@ -292,7 +309,34 @@ export const EditorShell = ({
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  });
+  }, [saveDraft]);
+
+  useEffect(() => {
+    if (!isDirty) return;
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+    }
+    autosaveTimerRef.current = setTimeout(() => {
+      void saveDraft({ silent: true });
+    }, 1500);
+
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+    };
+  }, [content, theme, isDirty, resolvedWorksheetId, saveDraft]);
+
+  useEffect(() => {
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!isDirty || isSaving) return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [isDirty, isSaving]);
 
   return (
     <>
@@ -380,7 +424,7 @@ export const EditorShell = ({
                 value={content.title}
                 onChange={(e) => {
                   setContent((prev) => ({ ...prev, title: e.target.value }));
-                  setSaveState('idle');
+                  markDirty();
                 }}
                 className="w-full border-none bg-transparent text-2xl font-bold text-slate-900 outline-none md:text-3xl"
                 style={{
@@ -397,7 +441,7 @@ export const EditorShell = ({
                     ...prev,
                     instructions: e.target.value,
                   }));
-                  setSaveState('idle');
+                  markDirty();
                 }}
                 placeholder="Short instructions for students"
                 className={`mt-2 mb-6 w-full resize-none rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm italic text-slate-700 outline-none ${contentFontClass}`}
@@ -443,7 +487,7 @@ export const EditorShell = ({
                             onChangeSection={(nextSection) =>
                               updateSectionById(section.id, () => nextSection)
                             }
-                            onDuplicateSection={() =>
+                            onDuplicateSection={() => {
                               setContent((prev) => ({
                                 ...prev,
                                 sections: [
@@ -457,16 +501,18 @@ export const EditorShell = ({
                                     })),
                                   },
                                 ],
-                              }))
-                            }
-                            onDeleteSection={() =>
+                              }));
+                              markDirty();
+                            }}
+                            onDeleteSection={() => {
                               setContent((prev) => ({
                                 ...prev,
                                 sections: prev.sections.filter(
                                   (s) => s.id !== section.id,
                                 ),
-                              }))
-                            }
+                              }));
+                              markDirty();
+                            }}
                             onAddQuestion={() =>
                               addQuestionToSection(section.id)
                             }

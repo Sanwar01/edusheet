@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,12 +20,12 @@ import { toast } from 'sonner';
 import { fetchJson } from '@/lib/api/client';
 import { EditorShell } from '@/components/worksheets/editor-shell';
 
-export default function NewWorksheetPage() {
+function NewWorksheetPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [topic, setTopic] = useState('');
-  const [subject, setSubject] = useState('');
-  const [gradeLevel, setGradeLevel] = useState('5');
+  const [subject, setSubject] = useState(SUBJECTS[0] ?? '');
+  const [gradeLevel, setGradeLevel] = useState(GRADE_LEVELS[5] ?? GRADE_LEVELS[0]);
   const [questionTypes, setQuestionTypes] = useState<string[]>([
     'multiple_choice',
     'short_answer',
@@ -43,6 +43,10 @@ export default function NewWorksheetPage() {
     if (loading) return;
     if (!topic.trim()) {
       toast.error('Please enter a topic first.');
+      return;
+    }
+    if (!subject.trim()) {
+      toast.error('Please select a subject.');
       return;
     }
     if (questionTypes.length === 0) {
@@ -151,7 +155,7 @@ export default function NewWorksheetPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Subject</Label>
-                <Select onValueChange={(v) => setSubject(v)}>
+                <Select value={subject} onValueChange={(v) => setSubject(v)}>
                   <SelectTrigger className="h-12">
                     <SelectValue placeholder="Select subject" />
                   </SelectTrigger>
@@ -166,7 +170,7 @@ export default function NewWorksheetPage() {
               </div>
               <div className="space-y-2">
                 <Label>Grade Level</Label>
-                <Select onValueChange={(v) => setGradeLevel(v)}>
+                <Select value={gradeLevel} onValueChange={(v) => setGradeLevel(v)}>
                   <SelectTrigger className="h-12">
                     <SelectValue placeholder="Select grade" />
                   </SelectTrigger>
@@ -195,7 +199,7 @@ export default function NewWorksheetPage() {
               <div className="space-y-2">
                 <Label>Difficulty</Label>
                 <Select
-                  defaultValue="medium"
+                  value={difficulty}
                   onValueChange={(v: 'easy' | 'medium' | 'hard' | 'mixed') =>
                     setDifficulty(v)
                   }
@@ -207,6 +211,7 @@ export default function NewWorksheetPage() {
                     <SelectItem value="easy">Easy</SelectItem>
                     <SelectItem value="medium">Medium</SelectItem>
                     <SelectItem value="hard">Hard</SelectItem>
+                    <SelectItem value="mixed">Mixed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -265,5 +270,13 @@ export default function NewWorksheetPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function NewWorksheetPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <NewWorksheetPageContent />
+    </Suspense>
   );
 }

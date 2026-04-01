@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { BookOpen, FileDown, Plus, Sparkles } from 'lucide-react';
 import { requireUser } from '@/features/auth/guards';
 import { Button } from '@/components/ui/button';
-import { getMonthStartIso } from '@/features/billing/limits';
+import { getMonthStartIso, isProPlan } from '@/features/billing/limits';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WorksheetCard } from '@/components/worksheets/worksheet-card';
 import { DashboardNavbar } from '@/components/dashboard/dashboard-navbar';
@@ -11,8 +11,13 @@ export default async function DashboardPage() {
   const { profile, user, supabase } = await requireUser();
   const monthStart = getMonthStartIso();
 
-  const [worksheetsCount, aiMonthCount, exportsMonthCount, worksheetsRes] =
+  const [subscriptionRes, worksheetsCount, aiMonthCount, exportsMonthCount, worksheetsRes] =
     await Promise.all([
+      supabase
+        .from('subscriptions')
+        .select('plan,status')
+        .eq('user_id', user.id)
+        .maybeSingle(),
       supabase
         .from('worksheets')
         .select('*', { count: 'exact', head: true })
@@ -35,7 +40,7 @@ export default async function DashboardPage() {
     ]);
 
   const worksheets = worksheetsRes.data ?? [];
-  const isPro = profile?.plan === 'pro';
+  const isPro = isProPlan(subscriptionRes.data?.plan, subscriptionRes.data?.status);
   const genLimit = isPro ? '∞' : `${aiMonthCount.count ?? 0}/10`;
   const exportLimit = isPro ? '∞' : `${exportsMonthCount.count ?? 0}/5`;
 

@@ -37,6 +37,11 @@ export const WorksheetRowActions = ({
   };
 
   const deleteWorksheet = async () => {
+    const confirmed = window.confirm(
+      'Delete this worksheet? This action cannot be undone.',
+    );
+    if (!confirmed) return;
+
     try {
       const res = await fetch(`/api/worksheets/${worksheetId}`, {
         method: 'DELETE',

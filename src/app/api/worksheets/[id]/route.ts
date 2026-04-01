@@ -1,7 +1,7 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { UpdateWorksheetSchema } from '@/lib/validators/worksheet';
 import { snapshotWorksheetVersion } from '@/features/worksheets/versioning';
-import { apiJsonError, handleUnknownError, withApiErrorHandling } from '@/lib/api/errors';
+import { apiJsonError, logApiError, withApiErrorHandling } from '@/lib/api/errors';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   return withApiErrorHandling('GET /api/worksheets/[id]', async () => {
@@ -60,7 +60,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           version_label: 'major-update',
         });
       } catch (e) {
-        return handleUnknownError('PATCH /api/worksheets/[id] snapshot', e);
+        logApiError('PATCH /api/worksheets/[id] snapshot', e);
       }
     }
 
