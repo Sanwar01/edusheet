@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { WorksheetRowActions } from '@/components/worksheets/worksheet-row-actions';
+import { formatRelativeDate } from './utils';
 
 type WorksheetCardData = {
   id: string;
@@ -42,7 +43,7 @@ export function WorksheetCard({ worksheet }: { worksheet: WorksheetCardData }) {
             {worksheet.status}
           </span>
           <span className="text-xs text-muted-foreground">
-            {new Date(worksheet.updated_at).toLocaleDateString()}
+            {formatRelativeDate(worksheet.updated_at)}
           </span>
         </div>
       </CardContent>
