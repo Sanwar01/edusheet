@@ -54,7 +54,9 @@ export const ExportPdfButton = ({ worksheetId }: { worksheetId: string }) => {
       <Button variant="outline" onClick={exportPdf} disabled={loading}>
         {loading ? 'Exporting...' : 'Export PDF'}
       </Button>
-      <p className="text-xs text-slate-500">Opens print dialog (Save as PDF)</p>
+      <p className="text-xs text-muted-foreground">
+        Opens print dialog (Save as PDF)
+      </p>
     </div>
   );
 };

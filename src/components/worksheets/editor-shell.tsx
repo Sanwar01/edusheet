@@ -10,7 +10,10 @@ import type {
   WorksheetLayout,
   WorksheetTheme,
 } from '@/types/worksheet';
-import { buildWorksheetLayout, defaultSectionLayout } from '@/features/worksheets/layout';
+import {
+  buildWorksheetLayout,
+  defaultSectionLayout,
+} from '@/features/worksheets/layout';
 import { EditorToolbar } from './editor-toolbar';
 import { ThemeSettingsSidebar } from './theme-settings-sidebar';
 import { WorksheetContentSchema } from '@/lib/validators/worksheet';
@@ -289,7 +292,10 @@ export const EditorShell = ({
   const addSection = () => {
     setContentWithHistory((prev) => {
       const next = addSectionAction(prev);
-      setSectionCollapsed((collapsed) => ({ ...collapsed, [next.sectionId]: false }));
+      setSectionCollapsed((collapsed) => ({
+        ...collapsed,
+        [next.sectionId]: false,
+      }));
       return next.content;
     });
   };
@@ -297,13 +303,18 @@ export const EditorShell = ({
   const insertSectionAt = (insertIndex: number) => {
     setContentWithHistory((prev) => {
       const next = insertSectionAtAction(prev, insertIndex);
-      setSectionCollapsed((collapsed) => ({ ...collapsed, [next.sectionId]: false }));
+      setSectionCollapsed((collapsed) => ({
+        ...collapsed,
+        [next.sectionId]: false,
+      }));
       return next.content;
     });
   };
 
   const addQuestionToSection = (sectionId: string) => {
-    setContentWithHistory((prev) => addQuestionToSectionAction(prev, sectionId));
+    setContentWithHistory((prev) =>
+      addQuestionToSectionAction(prev, sectionId),
+    );
   };
 
   const addFromPalette = (type: PaletteItemType) => {
@@ -366,7 +377,10 @@ export const EditorShell = ({
         }
         return r.content;
       });
-      setSectionCollapsed((prev) => ({ ...prev, [sectionId]: prev[sectionId] ?? false }));
+      setSectionCollapsed((prev) => ({
+        ...prev,
+        [sectionId]: prev[sectionId] ?? false,
+      }));
       markDirty();
     },
     [recordHistory],
@@ -441,9 +455,9 @@ export const EditorShell = ({
         saveState={saveState}
       />
 
-      <div className="flex flex-1 bg-slate-50">
+      <div className="flex flex-1 bg-background">
         {showWorksheetSidebar ? (
-          <div className="fixed top-16 left-0 bottom-0 z-40 hidden w-72 flex-col overflow-hidden border-r border-slate-200 bg-white lg:flex">
+          <div className="fixed top-16 left-0 bottom-0 z-40 hidden w-72 flex-col overflow-hidden border-r border-border bg-background lg:flex">
             <LeftEditorSidebar
               tab={leftTab}
               setTab={setLeftTab}
@@ -495,13 +509,16 @@ export const EditorShell = ({
                 showAnswerKey={showAnswerKey}
               />
             ) : (
-              <EditorEditPane model={editPaneModel} commands={editPaneCommands} />
+              <EditorEditPane
+                model={editPaneModel}
+                commands={editPaneCommands}
+              />
             )}
           </div>
         </main>
 
         {showThemeSidebar ? (
-          <div className="fixed top-16 right-0 bottom-0 z-40 hidden w-72 flex-col overflow-hidden border-l border-slate-200 bg-white lg:flex">
+          <div className="fixed top-16 right-0 bottom-0 z-40 hidden w-72 flex-col overflow-hidden border-l border-border bg-background lg:flex">
             <ThemeSettingsSidebar
               theme={theme}
               setTheme={setThemeWithHistory}

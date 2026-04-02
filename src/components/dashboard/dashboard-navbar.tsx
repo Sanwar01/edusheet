@@ -4,6 +4,7 @@ import { Button } from '../ui/button';
 import { requireUser } from '@/features/auth/guards';
 import Link from 'next/link';
 import { isProPlan } from '@/features/billing/limits';
+import { ThemeToggle } from '@/components/theme/theme-toggle';
 
 export const DashboardNavbar = async () => {
   const { user, supabase } = await requireUser();
@@ -15,7 +16,7 @@ export const DashboardNavbar = async () => {
     .maybeSingle();
   const isPro = isProPlan(subscription?.plan, subscription?.status);
   return (
-    <header className="border-b bg-white">
+    <header className="border-b bg-background/80 backdrop-blur-md">
       <div className="container flex items-center justify-between py-3">
         <div className="flex items-center gap-4">
           <Link href="/dashboard" className="font-semibold">
@@ -23,6 +24,7 @@ export const DashboardNavbar = async () => {
           </Link>
         </div>
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           {!isPro && (
             <Button
               variant="outline"

@@ -45,7 +45,10 @@ export function WorksheetQuestionPreview({
         <ul className="mt-2 list-none space-y-1 pl-0 text-sm" style={optMuted}>
           {options.map((option, optionIndex) => (
             <li key={`${question.id}_opt_${optionIndex}`}>
-              <span className="font-medium" style={{ color: theme.primaryColor }}>
+              <span
+                className="font-medium"
+                style={{ color: theme.primaryColor }}
+              >
                 {String.fromCharCode(65 + optionIndex)}.
               </span>{' '}
               {option}
@@ -66,7 +69,7 @@ export function WorksheetQuestionPreview({
               style={optMuted}
             >
               <span
-                className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border bg-gradient-to-b from-white to-slate-100"
+                className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border bg-linear-to-b from-white to-slate-100"
                 style={{ borderColor: theme.answerTextColor }}
                 aria-hidden
               />
@@ -107,7 +110,8 @@ export function WorksheetQuestionPreview({
     ) : null;
 
   const textBlock =
-    question.question_type === 'short_answer' || question.question_type === 'essay' ? (
+    question.question_type === 'short_answer' ||
+    question.question_type === 'essay' ? (
       <div
         className={`mt-3 w-full rounded border bg-white ${
           question.question_type === 'essay' ? 'min-h-[80px]' : 'min-h-[36px]'
@@ -117,7 +121,7 @@ export function WorksheetQuestionPreview({
     ) : null;
 
   return (
-    <div className="min-h-0 break-words">
+    <div className="min-h-0 wrap-break-word">
       <p className={`${promptWeight}`} style={{ color: theme.textColor }}>
         <span style={{ color: theme.primaryColor }}>{index}.</span>{' '}
         {question.prompt || 'Untitled question'}
@@ -128,7 +132,10 @@ export function WorksheetQuestionPreview({
       {fillBlock}
       {textBlock}
       {showAnswerKey && question.answer ? (
-        <p className="mt-2 rounded bg-slate-100 px-2 py-1 text-xs" style={{ color: theme.textColor }}>
+        <p
+          className="mt-2 rounded bg-secondary px-2 py-1 text-xs"
+          style={{ color: theme.textColor }}
+        >
           Answer: <span className="font-medium">{question.answer}</span>
         </p>
       ) : null}

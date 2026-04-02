@@ -52,7 +52,7 @@ export function EditorPreviewPane({
             >
               Name:{' '}
               <span
-                className="inline-block min-w-[12rem] border-b pb-0.5"
+                className="inline-block min-w-48 border-b pb-0.5"
                 style={{ borderColor: theme.answerTextColor }}
               />
             </div>
@@ -94,7 +94,8 @@ export function EditorPreviewPane({
           return (
             <section key={section.id} className={questionSpacingClass}>
               <h2 className="font-semibold" style={{ color: theme.textColor }}>
-                Section {sectionIndex + 1}: {section.heading || 'Untitled section'}{' '}
+                Section {sectionIndex + 1}:{' '}
+                {section.heading || 'Untitled section'}{' '}
                 <span style={{ color: theme.answerTextColor }}>
                   ({pointsBySection[section.id] ?? 0} pts)
                 </span>

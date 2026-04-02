@@ -8,7 +8,10 @@ import {
   useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { CirclePlus, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { WorksheetSectionCard } from '@/components/worksheets/worksheet-section-card';
@@ -49,9 +52,7 @@ type EditPaneModel = {
 
 type EditPaneCommands = {
   setContentWithHistory: (
-    updater:
-      | WorksheetContent
-      | ((prev: WorksheetContent) => WorksheetContent),
+    updater: WorksheetContent | ((prev: WorksheetContent) => WorksheetContent),
   ) => void;
   setSectionCollapsed: (
     updater: (prev: Record<string, boolean>) => Record<string, boolean>,
@@ -110,7 +111,9 @@ export function EditorEditPane({
           <ul className="space-y-2 text-sm">
             <li
               className={
-                model.completion.hasTitle ? 'text-emerald-700' : 'text-slate-600'
+                model.completion.hasTitle
+                  ? 'text-emerald-700'
+                  : 'text-slate-600'
               }
             >
               {model.completion.hasTitle ? '✓' : '•'} Add worksheet title
@@ -127,7 +130,9 @@ export function EditorEditPane({
             </li>
             <li
               className={
-                model.completion.hasSection ? 'text-emerald-700' : 'text-slate-600'
+                model.completion.hasSection
+                  ? 'text-emerald-700'
+                  : 'text-slate-600'
               }
             >
               {model.completion.hasSection ? '✓' : '•'} Create at least one
@@ -182,7 +187,7 @@ export function EditorEditPane({
                 style={{ color: model.theme.textColor }}
               >
                 Name:{' '}
-                <span className="inline-block min-w-[12rem] border-b border-slate-400 pb-0.5 align-bottom" />
+                <span className="inline-block min-w-48 border-b border-slate-400 pb-0.5 align-bottom" />
               </div>
             ) : null}
           </div>
@@ -292,7 +297,9 @@ export function EditorEditPane({
                         sectionNumber={index + 1}
                         questionStartNumber={questionStartNumber}
                         sectionPoints={model.pointsBySection[section.id] ?? 0}
-                        isCollapsed={Boolean(model.sectionCollapsed[section.id])}
+                        isCollapsed={Boolean(
+                          model.sectionCollapsed[section.id],
+                        )}
                         onToggleCollapsed={() =>
                           commands.setSectionCollapsed((prev) => ({
                             ...prev,
@@ -300,7 +307,10 @@ export function EditorEditPane({
                           }))
                         }
                         onChangeSection={(nextSection) =>
-                          commands.updateSectionById(section.id, () => nextSection)
+                          commands.updateSectionById(
+                            section.id,
+                            () => nextSection,
+                          )
                         }
                         onDropPaletteItem={(type, insertIndex) =>
                           commands.addQuestionFromPaletteToSection(
@@ -320,7 +330,9 @@ export function EditorEditPane({
                         onDuplicateSection={() =>
                           commands.duplicateSection(section.id)
                         }
-                        onDeleteSection={() => commands.deleteSection(section.id)}
+                        onDeleteSection={() =>
+                          commands.deleteSection(section.id)
+                        }
                         onAddQuestion={() =>
                           commands.addQuestionToSection(section.id)
                         }
@@ -332,7 +344,8 @@ export function EditorEditPane({
                   <div
                     onDragOver={(event) => event.preventDefault()}
                     onDrop={(event) => {
-                      const rawType = event.dataTransfer.getData(PALETTE_DRAG_MIME);
+                      const rawType =
+                        event.dataTransfer.getData(PALETTE_DRAG_MIME);
                       if (!rawType || !isPaletteItemType(rawType)) return;
                       commands.setIsPaletteDragging(false);
                       if (rawType === 'section') {
@@ -340,9 +353,14 @@ export function EditorEditPane({
                         return;
                       }
                       const lastSectionId =
-                        model.content.sections[model.content.sections.length - 1]?.id;
+                        model.content.sections[
+                          model.content.sections.length - 1
+                        ]?.id;
                       if (!lastSectionId) return;
-                      commands.addQuestionFromPaletteToSection(lastSectionId, rawType);
+                      commands.addQuestionFromPaletteToSection(
+                        lastSectionId,
+                        rawType,
+                      );
                     }}
                     className="rounded border border-dashed border-indigo-300 bg-indigo-50/60 px-2 py-1 text-[11px] text-slate-600 transition-colors hover:border-indigo-500 hover:bg-indigo-100/70"
                   >
@@ -356,7 +374,7 @@ export function EditorEditPane({
 
         <Button
           variant="outline"
-          className="mt-4 w-full border-dashed"
+          className="mt-4 w-full border-dashed border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-700"
           onClick={commands.addSection}
         >
           <CirclePlus className="h-4 w-4" /> Add section

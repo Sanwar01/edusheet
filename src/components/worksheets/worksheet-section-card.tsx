@@ -191,7 +191,7 @@ export const WorksheetSectionCard = ({
 
           <Button
             variant="outline"
-            className="mt-1 h-9 w-full border-dashed text-xs"
+            className="mt-1 h-9 w-full border-dashed text-xs border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-700"
             onClick={onAddQuestion}
           >
             <CirclePlus className="h-3.5 w-3.5" /> Add question

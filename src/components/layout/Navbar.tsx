@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { BookOpen } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useAuth } from '@/context/auth';
+import { ThemeToggle } from '@/components/theme/theme-toggle';
 
 export function Navbar() {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ export function Navbar() {
           EduSheet AI
         </Link>
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           {user ? (
             <Button variant="ghost" asChild>
               <Link href="/dashboard">Dashboard</Link>

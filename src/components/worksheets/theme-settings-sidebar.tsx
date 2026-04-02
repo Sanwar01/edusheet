@@ -35,31 +35,31 @@ function ThemePanelGroup({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <section className="rounded-lg border border-slate-100 bg-slate-50/60">
+    <section className="rounded-lg border border-border/60 bg-secondary/60">
       <button
         type="button"
-        className="flex w-full items-start gap-2 rounded-lg p-3 text-left transition-colors hover:bg-slate-100/80"
+        className="flex w-full items-start gap-2 rounded-lg p-3 text-left transition-colors hover:bg-secondary/80"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
       >
         <ChevronDown
           className={cn(
-            'mt-0.5 h-4 w-4 shrink-0 text-slate-500 transition-transform duration-200',
+            'mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200',
             open ? 'rotate-0' : '-rotate-90',
           )}
           aria-hidden
         />
         <div className="min-w-0 flex-1">
-          <h4 className="text-[11px] font-semibold uppercase tracking-wide text-slate-700">
+          <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             {title}
           </h4>
           {description ? (
-            <p className="mt-0.5 text-xs text-slate-500">{description}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
           ) : null}
         </div>
       </button>
       {open ? (
-        <div className="space-y-3 border-t border-slate-100/80 px-3 pb-3 pt-3">
+        <div className="space-y-3 border-t border-border/60 px-3 pb-3 pt-3">
           {children}
         </div>
       ) : null}
@@ -78,21 +78,21 @@ export const ThemeSettingsSidebar = ({
 }) => {
   return (
     <aside className="flex min-h-0 flex-1 flex-col">
-      <div className="shrink-0 space-y-4 border-b border-slate-100 p-4 pb-3">
+      <div className="shrink-0 space-y-4 border-b border-border p-4 pb-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <SlidersHorizontal className="h-4 w-4 text-slate-500" />
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
             <div>
-              <h3 className="text-sm font-semibold text-slate-900">
+              <h3 className="text-sm font-semibold text-foreground">
                 Appearance
               </h3>
-              <p className="text-xs text-slate-500">Optional styling tweaks</p>
+              <p className="text-xs text-muted-foreground">Optional styling tweaks</p>
             </div>
           </div>
           <Button
             type="button"
             variant="ghost"
-            className="h-7 px-2 text-xs text-slate-600"
+            className="h-7 px-2 text-xs text-muted-foreground"
             onClick={onClose}
           >
             <PanelRightClose className="h-3.5 w-3.5" />
@@ -116,7 +116,7 @@ export const ThemeSettingsSidebar = ({
           description="Sizes and weight for titles, body copy, and question prompts."
         >
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-600">
+            <label className="text-xs font-medium text-muted-foreground">
               Heading size
             </label>
             <Input
@@ -134,7 +134,7 @@ export const ThemeSettingsSidebar = ({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-600">
+            <label className="text-xs font-medium text-muted-foreground">
               Body text size
             </label>
             <Input
@@ -152,7 +152,7 @@ export const ThemeSettingsSidebar = ({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-600">
+            <label className="text-xs font-medium text-muted-foreground">
               Font style
             </label>
             <Select
@@ -176,7 +176,7 @@ export const ThemeSettingsSidebar = ({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-600">
+            <label className="text-xs font-medium text-muted-foreground">
               Question prompt weight
             </label>
             <Select
@@ -205,7 +205,7 @@ export const ThemeSettingsSidebar = ({
           description="Spacing and how choice lists appear in preview and PDF."
         >
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-600">
+            <label className="text-xs font-medium text-muted-foreground">
               Section and question spacing
             </label>
             <Select
@@ -229,10 +229,10 @@ export const ThemeSettingsSidebar = ({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-600">
+            <label className="text-xs font-medium text-muted-foreground">
               Answer options layout
             </label>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               Multiple choice and true or false.
             </p>
             <Select
@@ -260,7 +260,7 @@ export const ThemeSettingsSidebar = ({
           description="Top of the worksheet in preview and export."
         >
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-600">Style</label>
+            <label className="text-xs font-medium text-muted-foreground">Style</label>
             <Select
               value={theme.headerStyle}
               onValueChange={(value) =>
@@ -281,8 +281,8 @@ export const ThemeSettingsSidebar = ({
           </div>
 
           {theme.headerStyle === 'lesson' ? (
-            <div className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-3 py-2">
-              <span className="text-xs text-slate-600">Show name line</span>
+            <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2">
+              <span className="text-xs text-muted-foreground">Show name line</span>
               <Button
                 type="button"
                 variant={theme.showNameLine ? 'default' : 'outline'}
@@ -303,7 +303,7 @@ export const ThemeSettingsSidebar = ({
           description="Customize the appearance of your worksheet"
         >
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-600">
+            <label className="text-xs font-medium text-muted-foreground">
               Accent color
             </label>
             <Input
@@ -316,7 +316,7 @@ export const ThemeSettingsSidebar = ({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-600">
+            <label className="text-xs font-medium text-muted-foreground">
               Main text color
             </label>
             <Input
@@ -329,10 +329,10 @@ export const ThemeSettingsSidebar = ({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-600">
+            <label className="text-xs font-medium text-muted-foreground">
               Options and secondary text
             </label>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               Used for choices, answer lines, response boxes, and labels in
               preview and export.
             </p>

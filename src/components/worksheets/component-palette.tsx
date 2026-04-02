@@ -55,7 +55,7 @@ export function ComponentPalette({
 }) {
   return (
     <div className="space-y-2">
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted-foreground">
         Drag a component onto the worksheet, or click add.
       </p>
       {PALETTE_ITEMS.map((item) => (
@@ -68,14 +68,14 @@ export function ComponentPalette({
             onDragStateChange?.(true);
           }}
           onDragEnd={() => onDragStateChange?.(false)}
-          className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white px-2 py-2"
+          className="flex items-center justify-between gap-2 rounded-md border border-border bg-card px-2 py-2"
         >
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-slate-800">{item.label}</p>
-            <p className="truncate text-xs text-slate-500">{item.description}</p>
+            <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
+            <p className="truncate text-xs text-muted-foreground">{item.description}</p>
           </div>
           <div className="flex items-center gap-1">
-            <GripVertical className="h-4 w-4 text-slate-400" />
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
             <Button
               type="button"
               variant="ghost"

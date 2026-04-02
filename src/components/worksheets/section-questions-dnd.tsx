@@ -155,8 +155,9 @@ export const SectionQuestionsDnd = ({
             : 'border-slate-300 bg-slate-50 text-slate-500'
         }`}
       >
-        No questions yet. Click <span className="font-medium">Add question</span>{' '}
-        to begin, or drop a question here.
+        No questions yet. Click{' '}
+        <span className="font-medium">Add question</span> to begin, or drop a
+        question here.
       </div>
     );
   }
@@ -186,381 +187,403 @@ export const SectionQuestionsDnd = ({
                   : 'space-y-2.5',
               )}
             >
-            {section.questions.map((question, index) => (
-              <div
-                key={question.id}
-                className={cn(
-                  'space-y-2',
-                  isGrid && 'min-w-0',
-                  isGrid &&
-                    sectionLayout.border === 'cells' &&
-                    'rounded-md border border-slate-200 bg-white p-2',
-                )}
-              >
-                {showDropTargets ? (
-                  <div
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={(event) => {
-                      const rawType = event.dataTransfer.getData(PALETTE_DRAG_MIME);
-                      if (!rawType || !isPaletteItemType(rawType)) return;
-                      if (rawType === 'section') return;
-                      onDropPaletteItem(rawType, index);
-                    }}
-                    className="rounded border border-dashed border-indigo-300 bg-indigo-50/60 px-2 py-1 text-[11px] text-slate-600 transition-colors hover:border-indigo-500 hover:bg-indigo-100/70"
-                  >
-                    Drop question here (before {questionStartNumber + index})
-                  </div>
-                ) : null}
-                <SortableQuestionShell
-                  id={question.id}
-                  sortData={{
-                    kind: 'question',
-                    questionId: question.id,
-                    sectionId: section.id,
-                    index,
-                  }}
-                >
-              <div
-                className={cn(
-                  'mb-1 min-w-0',
-                  isGrid
-                    ? 'flex flex-col gap-2'
-                    : 'flex flex-row items-center justify-between gap-2',
-                )}
-              >
-                <p
-                  className={cn(
-                    'text-xs font-medium text-slate-500',
-                    !isGrid && 'shrink-0',
-                  )}
-                >
-                  Question {questionStartNumber + index}
-                </p>
+              {section.questions.map((question, index) => (
                 <div
+                  key={question.id}
                   className={cn(
-                    'flex min-w-0 flex-wrap items-center gap-2',
-                    !isGrid && 'justify-end',
-                    isGrid && 'w-full',
+                    'space-y-2',
+                    isGrid && 'min-w-0',
+                    isGrid &&
+                      sectionLayout.border === 'cells' &&
+                      'rounded-md border border-slate-200 bg-slate-50 p-2',
                   )}
                 >
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="h-7 shrink-0 px-2 text-xs text-slate-600"
-                    onClick={() =>
-                      setCollapsedByQuestionId((prev) => ({
-                        ...prev,
-                        [question.id]: !prev[question.id],
-                      }))
-                    }
+                  {showDropTargets ? (
+                    <div
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={(event) => {
+                        const rawType =
+                          event.dataTransfer.getData(PALETTE_DRAG_MIME);
+                        if (!rawType || !isPaletteItemType(rawType)) return;
+                        if (rawType === 'section') return;
+                        onDropPaletteItem(rawType, index);
+                      }}
+                      className="rounded border border-dashed border-indigo-300 bg-indigo-50/60 px-2 py-1 text-[11px] text-slate-600 transition-colors hover:border-indigo-500 hover:bg-indigo-100/70"
+                    >
+                      Drop question here (before {questionStartNumber + index})
+                    </div>
+                  ) : null}
+                  <SortableQuestionShell
+                    id={question.id}
+                    sortData={{
+                      kind: 'question',
+                      questionId: question.id,
+                      sectionId: section.id,
+                      index,
+                    }}
                   >
-                    {collapsedByQuestionId[question.id] ? (
-                      <>
-                        <ChevronRight className="h-3.5 w-3.5" /> Show question
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="h-3.5 w-3.5" /> Hide question
-                      </>
-                    )}
-                  </Button>
-                  <Select
-                    value={question.question_type}
-                    onValueChange={(nextType) =>
-                      onChangeQuestions(
-                        section.questions.map((q) =>
-                          q.id === question.id
-                            ? buildQuestionByType(q, nextType as QuestionType)
-                            : q,
-                        ),
-                      )
-                    }
-                  >
-                    <SelectTrigger
+                    <div
                       className={cn(
-                        'h-7 bg-slate-100 text-xs',
-                        isGrid ? 'min-w-0 w-full' : 'w-[150px]',
+                        'mb-1 min-w-0',
+                        isGrid
+                          ? 'flex flex-col gap-2'
+                          : 'flex flex-row items-center justify-between gap-2',
                       )}
                     >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {QUESTION_TYPE_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                    <span>Pts</span>
-                    <input
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={question.points ?? 1}
+                      <p
+                        className={cn(
+                          'text-xs font-medium text-slate-500',
+                          !isGrid && 'shrink-0',
+                        )}
+                      >
+                        Question {questionStartNumber + index}
+                      </p>
+                      <div
+                        className={cn(
+                          'flex min-w-0 flex-wrap items-center gap-2',
+                          !isGrid && 'justify-end',
+                          isGrid && 'w-full',
+                        )}
+                      >
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="h-7 shrink-0 px-2 text-xs text-slate-600"
+                          onClick={() =>
+                            setCollapsedByQuestionId((prev) => ({
+                              ...prev,
+                              [question.id]: !prev[question.id],
+                            }))
+                          }
+                        >
+                          {collapsedByQuestionId[question.id] ? (
+                            <>
+                              <ChevronRight className="h-3.5 w-3.5" /> Show
+                              question
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="h-3.5 w-3.5" /> Hide
+                              question
+                            </>
+                          )}
+                        </Button>
+                        <Select
+                          value={question.question_type}
+                          onValueChange={(nextType) =>
+                            onChangeQuestions(
+                              section.questions.map((q) =>
+                                q.id === question.id
+                                  ? buildQuestionByType(
+                                      q,
+                                      nextType as QuestionType,
+                                    )
+                                  : q,
+                              ),
+                            )
+                          }
+                        >
+                          <SelectTrigger
+                            className={cn(
+                              'h-7 bg-slate-100 text-xs',
+                              isGrid ? 'min-w-0 w-full' : 'w-[150px]',
+                            )}
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {QUESTION_TYPE_OPTIONS.map((option) => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <div className="flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                          <span>Pts</span>
+                          <input
+                            type="number"
+                            min={1}
+                            step={1}
+                            value={question.points ?? 1}
+                            onChange={(e) =>
+                              onChangeQuestions(
+                                section.questions.map((q) =>
+                                  q.id === question.id
+                                    ? {
+                                        ...q,
+                                        points: Number.isNaN(
+                                          Number(e.target.value),
+                                        )
+                                          ? 1
+                                          : Math.max(1, Number(e.target.value)),
+                                      }
+                                    : q,
+                                ),
+                              )
+                            }
+                            className="h-5 w-12 rounded border border-slate-300 bg-white px-1 text-right text-xs outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <Textarea
+                      id={`question_${question.id}`}
+                      value={question.prompt}
+                      placeholder="Type the question prompt here"
+                      className="w-full border-slate-200 bg-white font-semibold rounded-md p-2"
                       onChange={(e) =>
                         onChangeQuestions(
                           section.questions.map((q) =>
                             q.id === question.id
-                              ? {
-                                  ...q,
-                                  points: Number.isNaN(Number(e.target.value))
-                                    ? 1
-                                    : Math.max(1, Number(e.target.value)),
-                                }
+                              ? { ...q, prompt: e.target.value }
                               : q,
                           ),
                         )
                       }
-                      className="h-5 w-12 rounded border border-slate-300 bg-white px-1 text-right text-xs outline-none"
                     />
-                  </div>
-                </div>
-              </div>
-
-                <Textarea
-                  id={`question_${question.id}`}
-                  value={question.prompt}
-                  placeholder="Type the question prompt here"
-                  className="w-full border-slate-200 bg-white font-semibold"
-                  onChange={(e) =>
-                    onChangeQuestions(
-                      section.questions.map((q) =>
-                        q.id === question.id
-                          ? { ...q, prompt: e.target.value }
-                          : q,
-                      ),
-                    )
-                  }
-                />
-              {collapsedByQuestionId[question.id] ? (
-                <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                  <span className="rounded-full bg-white px-2 py-1">
-                    Type: {questionTypeLabelMap[question.question_type]}
-                  </span>
-                  <span className="rounded-full bg-white px-2 py-1">
-                    Points: {question.points ?? 1}
-                  </span>
-                  <span className="rounded-full bg-white px-2 py-1">
-                    Answer: {question.answer?.trim() ? 'Set' : 'Not set'}
-                  </span>
-                </div>
-              ) : (
-                <>
-                  {(question.question_type === 'multiple_choice' ||
-                    question.question_type === 'matching') && (
-                    <div className="mt-2 space-y-1.5">
-                      {(question.options ?? []).map((option, optionIndex) => (
-                        <div
-                          key={`${question.id}_opt_${optionIndex}`}
-                          className="flex min-w-0 flex-wrap items-center gap-2"
-                        >
-                          <span className="shrink-0 text-xs text-slate-500">
-                            {String.fromCharCode(65 + optionIndex)}.
-                          </span>
-                          <input
-                            value={option}
-                            onChange={(e) =>
-                              onChangeQuestions(
-                                section.questions.map((q) => {
-                                  if (q.id !== question.id) return q;
-                                  const nextOptions = [...(q.options ?? [])];
-                                  nextOptions[optionIndex] = e.target.value;
-                                  return { ...q, options: nextOptions };
-                                }),
-                              )
-                            }
-                            placeholder={`Option ${optionIndex + 1}`}
-                            className="h-8 min-w-0 flex-1 basis-32 rounded-md border border-slate-200 bg-white px-2 text-sm outline-none focus:border-slate-300"
-                          />
-                          {question.question_type === 'multiple_choice' && (
+                    {collapsedByQuestionId[question.id] ? (
+                      <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                        <span className="rounded-full bg-white px-2 py-1">
+                          Type: {questionTypeLabelMap[question.question_type]}
+                        </span>
+                        <span className="rounded-full bg-white px-2 py-1">
+                          Points: {question.points ?? 1}
+                        </span>
+                        <span className="rounded-full bg-white px-2 py-1">
+                          Answer: {question.answer?.trim() ? 'Set' : 'Not set'}
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        {(question.question_type === 'multiple_choice' ||
+                          question.question_type === 'matching') && (
+                          <div className="mt-2 space-y-1.5">
+                            {(question.options ?? []).map(
+                              (option, optionIndex) => (
+                                <div
+                                  key={`${question.id}_opt_${optionIndex}`}
+                                  className="flex min-w-0 flex-wrap items-center gap-2"
+                                >
+                                  <span className="shrink-0 text-xs text-slate-500">
+                                    {String.fromCharCode(65 + optionIndex)}.
+                                  </span>
+                                  <input
+                                    value={option}
+                                    onChange={(e) =>
+                                      onChangeQuestions(
+                                        section.questions.map((q) => {
+                                          if (q.id !== question.id) return q;
+                                          const nextOptions = [
+                                            ...(q.options ?? []),
+                                          ];
+                                          nextOptions[optionIndex] =
+                                            e.target.value;
+                                          return { ...q, options: nextOptions };
+                                        }),
+                                      )
+                                    }
+                                    placeholder={`Option ${optionIndex + 1}`}
+                                    className="h-8 min-w-0 flex-1 basis-32 rounded-md border border-slate-200 bg-white px-2 text-sm outline-none focus:border-slate-300"
+                                  />
+                                  {question.question_type ===
+                                    'multiple_choice' && (
+                                    <Button
+                                      type="button"
+                                      variant={
+                                        question.answer === option
+                                          ? 'default'
+                                          : 'outline'
+                                      }
+                                      className="h-8 shrink-0 text-xs"
+                                      onClick={() =>
+                                        onChangeQuestions(
+                                          section.questions.map((q) =>
+                                            q.id === question.id
+                                              ? { ...q, answer: option }
+                                              : q,
+                                          ),
+                                        )
+                                      }
+                                    >
+                                      Correct
+                                    </Button>
+                                  )}
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="h-8 shrink-0 px-2 text-xs text-rose-600 hover:text-rose-700"
+                                    disabled={
+                                      question.question_type ===
+                                        'multiple_choice' &&
+                                      (question.options?.length ?? 0) <= 2
+                                    }
+                                    onClick={() =>
+                                      onChangeQuestions(
+                                        section.questions.map((q) => {
+                                          if (q.id !== question.id) return q;
+                                          const nextOptions = [
+                                            ...(q.options ?? []),
+                                          ].filter((_, i) => i !== optionIndex);
+                                          const nextAnswer =
+                                            q.answer === option
+                                              ? (nextOptions[0] ?? '')
+                                              : q.answer;
+                                          return {
+                                            ...q,
+                                            options: nextOptions,
+                                            answer: nextAnswer,
+                                          };
+                                        }),
+                                      )
+                                    }
+                                  >
+                                    Remove
+                                  </Button>
+                                </div>
+                              ),
+                            )}
                             <Button
-                              type="button"
-                              variant={
-                                question.answer === option
-                                  ? 'default'
-                                  : 'outline'
-                              }
-                              className="h-8 shrink-0 text-xs"
+                              variant="ghost"
+                              className="h-8 px-2 text-xs text-slate-600"
                               onClick={() =>
                                 onChangeQuestions(
                                   section.questions.map((q) =>
                                     q.id === question.id
-                                      ? { ...q, answer: option }
+                                      ? {
+                                          ...q,
+                                          options: [
+                                            ...(q.options ?? []),
+                                            `Option ${(q.options?.length ?? 0) + 1}`,
+                                          ],
+                                        }
                                       : q,
                                   ),
                                 )
                               }
                             >
-                              Correct
+                              Add option
                             </Button>
-                          )}
+                            {question.question_type === 'multiple_choice' && (
+                              <p className="text-xs text-slate-500">
+                                Multiple choice requires at least 2 options and
+                                one correct answer.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        {question.question_type === 'true_false' ? (
+                          <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
+                            <p className="mb-1 text-xs font-medium text-slate-500">
+                              Correct answer
+                            </p>
+                            <div className="flex gap-2">
+                              {TRUE_FALSE_OPTIONS.map((value) => (
+                                <Button
+                                  key={value}
+                                  type="button"
+                                  variant={
+                                    question.answer === value
+                                      ? 'default'
+                                      : 'outline'
+                                  }
+                                  className="h-8 text-xs"
+                                  onClick={() =>
+                                    onChangeQuestions(
+                                      section.questions.map((q) =>
+                                        q.id === question.id
+                                          ? { ...q, answer: value }
+                                          : q,
+                                      ),
+                                    )
+                                  }
+                                >
+                                  {value}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        ) : question.question_type === 'short_answer' ? (
+                          <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
+                            <p className="mb-1 text-xs font-medium text-slate-500">
+                              Expected answer (optional)
+                            </p>
+                            <Input
+                              value={question.answer ?? ''}
+                              placeholder="Optional teacher answer"
+                              className="w-full border-slate-200 bg-white"
+                              onChange={(e) =>
+                                onChangeQuestions(
+                                  section.questions.map((q) =>
+                                    q.id === question.id
+                                      ? { ...q, answer: e.target.value }
+                                      : q,
+                                  ),
+                                )
+                              }
+                            />
+                          </div>
+                        ) : (
+                          <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
+                            <p className="mb-1 text-xs font-medium text-slate-500">
+                              Answer
+                            </p>
+                            <Textarea
+                              value={question.answer ?? ''}
+                              placeholder="Type the expected answer"
+                              className="w-full h-full border-slate-200 bg-white"
+                              onChange={(e) =>
+                                onChangeQuestions(
+                                  section.questions.map((q) =>
+                                    q.id === question.id
+                                      ? { ...q, answer: e.target.value }
+                                      : q,
+                                  ),
+                                )
+                              }
+                            />
+                          </div>
+                        )}
+                        <div className="mt-2 flex flex-wrap gap-1">
                           <Button
-                            type="button"
                             variant="ghost"
-                            className="h-8 shrink-0 px-2 text-xs text-rose-600 hover:text-rose-700"
-                            disabled={
-                              question.question_type === 'multiple_choice' &&
-                              (question.options?.length ?? 0) <= 2
-                            }
+                            className="h-8 px-2 text-xs text-slate-600"
                             onClick={() =>
-                              onChangeQuestions(
-                                section.questions.map((q) => {
-                                  if (q.id !== question.id) return q;
-                                  const nextOptions = [
-                                    ...(q.options ?? []),
-                                  ].filter((_, i) => i !== optionIndex);
-                                  const nextAnswer =
-                                    q.answer === option
-                                      ? (nextOptions[0] ?? '')
-                                      : q.answer;
-                                  return {
-                                    ...q,
-                                    options: nextOptions,
-                                    answer: nextAnswer,
-                                  };
-                                }),
-                              )
+                              onChangeQuestions([
+                                ...section.questions,
+                                duplicateQuestion(question),
+                              ])
                             }
                           >
-                            Remove
+                            <Copy className="h-3.5 w-3.5" /> Duplicate
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            className="h-8 px-2 text-xs text-rose-600 hover:text-rose-700"
+                            onClick={() => {
+                              const confirmed = window.confirm(
+                                'Delete this question? This cannot be undone.',
+                              );
+                              if (!confirmed) return;
+                              onChangeQuestions(
+                                section.questions.filter(
+                                  (q) => q.id !== question.id,
+                                ),
+                              );
+                            }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" /> Delete
                           </Button>
                         </div>
-                      ))}
-                      <Button
-                        variant="ghost"
-                        className="h-8 px-2 text-xs text-slate-600"
-                        onClick={() =>
-                          onChangeQuestions(
-                            section.questions.map((q) =>
-                              q.id === question.id
-                                ? {
-                                    ...q,
-                                    options: [
-                                      ...(q.options ?? []),
-                                      `Option ${(q.options?.length ?? 0) + 1}`,
-                                    ],
-                                  }
-                                : q,
-                            ),
-                          )
-                        }
-                      >
-                        Add option
-                      </Button>
-                      {question.question_type === 'multiple_choice' && (
-                        <p className="text-xs text-slate-500">
-                          Multiple choice requires at least 2 options and one
-                          correct answer.
-                        </p>
-                      )}
-                    </div>
-                  )}
-                  {question.question_type === 'true_false' ? (
-                    <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
-                      <p className="mb-1 text-xs font-medium text-slate-500">
-                        Correct answer
-                      </p>
-                      <div className="flex gap-2">
-                        {TRUE_FALSE_OPTIONS.map((value) => (
-                          <Button
-                            key={value}
-                            type="button"
-                            variant={
-                              question.answer === value ? 'default' : 'outline'
-                            }
-                            className="h-8 text-xs"
-                            onClick={() =>
-                              onChangeQuestions(
-                                section.questions.map((q) =>
-                                  q.id === question.id
-                                    ? { ...q, answer: value }
-                                    : q,
-                                ),
-                              )
-                            }
-                          >
-                            {value}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : question.question_type === 'short_answer' ? (
-                    <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
-                      <p className="mb-1 text-xs font-medium text-slate-500">
-                        Expected answer (optional)
-                      </p>
-                      <Input
-                        value={question.answer ?? ''}
-                        placeholder="Optional teacher answer"
-                        className="w-full border-slate-200 bg-white"
-                        onChange={(e) =>
-                          onChangeQuestions(
-                            section.questions.map((q) =>
-                              q.id === question.id
-                                ? { ...q, answer: e.target.value }
-                                : q,
-                            ),
-                          )
-                        }
-                      />
-                    </div>
-                  ) : (
-                    <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
-                      <p className="mb-1 text-xs font-medium text-slate-500">
-                        Answer
-                      </p>
-                      <Textarea
-                        value={question.answer ?? ''}
-                        placeholder="Type the expected answer"
-                        className="w-full h-full border-slate-200 bg-white"
-                        onChange={(e) =>
-                          onChangeQuestions(
-                            section.questions.map((q) =>
-                              q.id === question.id
-                                ? { ...q, answer: e.target.value }
-                                : q,
-                            ),
-                          )
-                        }
-                      />
-                    </div>
-                  )}
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    <Button
-                      variant="ghost"
-                      className="h-8 px-2 text-xs text-slate-600"
-                      onClick={() =>
-                        onChangeQuestions([
-                          ...section.questions,
-                          duplicateQuestion(question),
-                        ])
-                      }
-                    >
-                      <Copy className="h-3.5 w-3.5" /> Duplicate
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      className="h-8 px-2 text-xs text-rose-600 hover:text-rose-700"
-                      onClick={() => {
-                        const confirmed = window.confirm(
-                          'Delete this question? This cannot be undone.',
-                        );
-                        if (!confirmed) return;
-                        onChangeQuestions(
-                          section.questions.filter((q) => q.id !== question.id),
-                        );
-                      }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" /> Delete
-                    </Button>
-                  </div>
-                </>
-              )}
-                </SortableQuestionShell>
-              </div>
-            ))}
+                      </>
+                    )}
+                  </SortableQuestionShell>
+                </div>
+              ))}
             </div>
           </div>
         </SortableContext>

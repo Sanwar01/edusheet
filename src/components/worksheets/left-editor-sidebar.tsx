@@ -28,15 +28,15 @@ export function LeftEditorSidebar({
   onClose?: () => void;
 }) {
   return (
-    <aside className="hidden min-h-0 flex-1 flex-col border-r border-slate-200 bg-white lg:flex">
-      <div className="shrink-0 border-b border-slate-200 p-3">
-        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+    <aside className="hidden min-h-0 flex-1 flex-col border-r border-border bg-background lg:flex">
+      <div className="shrink-0 border-b border-border p-3">
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <div className="flex items-center justify-between gap-2">
             <span>Worksheet panel</span>
             <Button
               type="button"
               variant="ghost"
-              className="h-7 px-2 text-xs text-slate-600"
+              className="h-7 px-2 text-xs text-muted-foreground"
               onClick={onClose}
             >
               <PanelLeftClose className="h-3.5 w-3.5" />
@@ -71,20 +71,20 @@ export function LeftEditorSidebar({
           <div className="space-y-3">
             <button
               type="button"
-              className={`w-full rounded-md px-2 py-1.5 text-left text-sm ${selectedNodeId === 'worksheet_title' ? 'bg-slate-100 font-medium text-slate-900' : 'text-slate-700 hover:bg-slate-50'}`}
+              className={`w-full rounded-md px-2 py-1.5 text-left text-sm ${selectedNodeId === 'worksheet_title' ? 'bg-secondary font-medium text-foreground' : 'text-muted-foreground hover:bg-secondary/60'}`}
               onClick={() => onSelectNode('worksheet_title')}
             >
               Worksheet title
             </button>
             <button
               type="button"
-              className={`w-full rounded-md px-2 py-1.5 text-left text-sm ${selectedNodeId === 'worksheet_instructions' ? 'bg-slate-100 font-medium text-slate-900' : 'text-slate-700 hover:bg-slate-50'}`}
+              className={`w-full rounded-md px-2 py-1.5 text-left text-sm ${selectedNodeId === 'worksheet_instructions' ? 'bg-secondary font-medium text-foreground' : 'text-muted-foreground hover:bg-secondary/60'}`}
               onClick={() => onSelectNode('worksheet_instructions')}
             >
               Instructions
             </button>
-            <div className="border-t border-slate-200 pt-2">
-              <p className="px-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <div className="border-t border-border pt-2">
+              <p className="px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Sections
               </p>
               <div className="mt-2 space-y-2">
@@ -92,7 +92,7 @@ export function LeftEditorSidebar({
                   <div key={section.id} className="space-y-1">
                     <button
                       type="button"
-                      className={`w-full rounded-md px-2 py-1.5 text-left text-sm ${selectedNodeId === `section_${section.id}` ? 'bg-slate-100 font-medium text-slate-900' : 'text-slate-700 hover:bg-slate-50'}`}
+                      className={`w-full rounded-md px-2 py-1.5 text-left text-sm ${selectedNodeId === `section_${section.id}` ? 'bg-secondary font-medium text-foreground' : 'text-muted-foreground hover:bg-secondary/60'}`}
                       onClick={() => onSelectNode(`section_${section.id}`)}
                     >
                       {index + 1}. {section.heading || 'Untitled section'}
@@ -102,7 +102,7 @@ export function LeftEditorSidebar({
                         <button
                           key={question.id}
                           type="button"
-                          className={`w-full rounded-md px-2 py-1.5 text-left text-xs ${selectedNodeId === `question_${question.id}` ? 'bg-slate-100 font-medium text-slate-900' : 'text-slate-600 hover:bg-slate-50'}`}
+                          className={`w-full rounded-md px-2 py-1.5 text-left text-xs ${selectedNodeId === `question_${question.id}` ? 'bg-secondary font-medium text-foreground' : 'text-muted-foreground hover:bg-secondary/60'}`}
                           onClick={() =>
                             onSelectNode(`question_${question.id}`)
                           }

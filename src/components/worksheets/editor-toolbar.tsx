@@ -50,7 +50,7 @@ export const EditorToolbar = ({
   saveState,
 }: EditorToolbarProps) => {
   return (
-    <div className="sticky top-0 z-50 border-b bg-white/90 backdrop-blur-md">
+    <div className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
       <div className="flex h-16 items-center justify-between px-4 md:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <Button variant="ghost" size="sm" asChild>
@@ -60,17 +60,17 @@ export const EditorToolbar = ({
             </Link>
           </Button>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-slate-900">
+            <p className="truncate text-sm font-semibold text-foreground">
               {title || 'Untitled worksheet'}
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               Teacher mode: fast editing with auto-save
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="hidden items-center gap-1 rounded-md border border-slate-200 bg-white p-1 md:flex">
+          <div className="hidden items-center gap-1 rounded-md border border-border bg-background p-1 md:flex">
             <Button
               variant={mode === 'edit' ? 'default' : 'ghost'}
               size="sm"
@@ -114,12 +114,12 @@ export const EditorToolbar = ({
             </Button>
           </div>
 
-          <div className="hidden rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 md:block">
+          <div className="hidden rounded-full border border-border bg-secondary px-2.5 py-1 text-xs text-muted-foreground md:block">
             Total points:{' '}
-            <span className="font-semibold text-slate-800">{pointsTotal}</span>
+            <span className="font-semibold text-foreground">{pointsTotal}</span>
           </div>
 
-          <div className="hidden items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 md:flex">
+          <div className="hidden items-center gap-1 rounded-full border border-border bg-secondary px-2.5 py-1 text-xs text-muted-foreground md:flex">
             {isSaving ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving
