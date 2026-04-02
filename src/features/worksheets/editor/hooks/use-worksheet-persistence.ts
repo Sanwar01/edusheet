@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import type { WorksheetContent, WorksheetLayout, WorksheetTheme } from '@/types/worksheet';
+import type {
+  WorksheetContent,
+  WorksheetLayout,
+  WorksheetTheme,
+} from '@/types/worksheet';
 import { buildLayoutPayload } from '@/components/worksheets/editor-shell.helpers';
 import { fetchJson, getApiErrorMessage } from '@/lib/api/client';
 import { CreateWorksheetResponseSchema } from '@/lib/validators/api';
@@ -30,7 +34,9 @@ export function useWorksheetPersistence({
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [saveState, setSaveState] = useState<'idle' | 'saved' | 'error'>('idle');
+  const [saveState, setSaveState] = useState<'idle' | 'saved' | 'error'>(
+    'idle',
+  );
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autosaveRetryRef = useRef(0);
 
@@ -103,7 +109,9 @@ export function useWorksheetPersistence({
         }
 
         if (!res.ok) {
-          throw new Error(await getApiErrorMessage(res, 'Failed to save worksheet.'));
+          throw new Error(
+            await getApiErrorMessage(res, 'Failed to save worksheet.'),
+          );
         }
 
         setSaveState('saved');

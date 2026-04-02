@@ -67,6 +67,43 @@ export const EditorToolbar = ({
               Teacher mode: fast editing with auto-save
             </p>
           </div>
+          <div className="hidden items-center gap-2 rounded-md border border-border bg-secondary/50 px-2 py-1 md:flex">
+            <div className="rounded-full border border-border bg-secondary px-2.5 py-1 text-xs text-muted-foreground">
+              Total points:{' '}
+              <span className="font-semibold text-foreground">
+                {pointsTotal}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 rounded-full border border-border bg-secondary px-2.5 py-1 text-xs text-muted-foreground">
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving
+                </>
+              ) : saveState === 'saved' ? (
+                <>
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />{' '}
+                  Saved
+                </>
+              ) : saveState === 'error' ? (
+                <span className="text-rose-600">Save failed</span>
+              ) : (
+                <span>Not saved</span>
+              )}
+            </div>
+          </div>
+
+          {mode === 'preview' ? (
+            <div className="flex items-center gap-1 rounded-md border border-border bg-background p-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAnswerKey(!showAnswerKey)}
+                className="h-7 gap-1.5 px-2 text-xs"
+              >
+                {showAnswerKey ? 'Hide answers' : 'Show answers'}
+              </Button>
+            </div>
+          ) : null}
         </div>
 
         <div className="flex items-center gap-2">
@@ -91,86 +128,60 @@ export const EditorToolbar = ({
             </Button>
           </div>
 
-          <div className="hidden items-center gap-1 md:flex">
+          <div className="hidden items-center gap-1 rounded-md border border-border bg-background p-1 md:flex">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={onUndo}
               disabled={!canUndo}
-              className="h-8 gap-1 text-xs"
+              className="h-7 gap-1 px-2 text-xs"
             >
               <Undo2 className="h-3.5 w-3.5" />
               Undo
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={onRedo}
               disabled={!canRedo}
-              className="h-8 gap-1 text-xs"
+              className="h-7 gap-1 px-2 text-xs"
             >
               <Redo2 className="h-3.5 w-3.5" />
               Redo
             </Button>
           </div>
 
-          <div className="hidden rounded-full border border-border bg-secondary px-2.5 py-1 text-xs text-muted-foreground md:block">
-            Total points:{' '}
-            <span className="font-semibold text-foreground">{pointsTotal}</span>
+          <div className="flex items-center gap-1 rounded-md border border-border bg-background p-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onExportPdf}
+              disabled={isExporting}
+              className="h-7 gap-1.5 px-2 text-xs"
+            >
+              {isExporting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <FileDown className="h-3.5 w-3.5" />
+              )}
+              Export
+            </Button>
           </div>
-
-          <div className="hidden items-center gap-1 rounded-full border border-border bg-secondary px-2.5 py-1 text-xs text-muted-foreground md:flex">
-            {isSaving ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving
-              </>
-            ) : saveState === 'saved' ? (
-              <>
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Saved
-              </>
-            ) : saveState === 'error' ? (
-              <span className="text-rose-600">Save failed</span>
-            ) : (
-              <span>Not saved</span>
-            )}
-          </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowAnswerKey(!showAnswerKey)}
-            className="gap-1.5 text-xs"
-          >
-            {showAnswerKey ? 'Hide answers' : 'Show answers'}
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onExportPdf}
-            disabled={isExporting}
-            className="gap-1.5 text-xs"
-          >
-            {isExporting ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <FileDown className="h-3.5 w-3.5" />
-            )}
-            Export
-          </Button>
-          <Button
-            size="sm"
-            onClick={onSave}
-            disabled={isSaving}
-            className="gap-1.5 text-xs"
-          >
-            {isSaving ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Save className="h-3.5 w-3.5" />
-            )}
-            Save
-          </Button>
+          {saveState !== 'saved' || isSaving ? (
+            <Button
+              size="sm"
+              onClick={onSave}
+              disabled={isSaving}
+              className="gap-1.5 px-2 text-xs"
+            >
+              {isSaving ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Save className="h-3.5 w-3.5" />
+              )}
+              {saveState === 'error' ? 'Retry save' : 'Save now'}
+            </Button>
+          ) : null}
         </div>
       </div>
     </div>
