@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { apiJsonError, withApiErrorHandling } from '@/lib/api/errors';
+import { revalidatePath } from 'next/cache';
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   return withApiErrorHandling('POST /api/worksheets/[id]/duplicate', async () => {
@@ -36,6 +37,11 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       .single();
 
     if (copyError) return apiJsonError(copyError.message, 500);
+
+    // Ensure server-rendered dashboard lists reflect the new copy immediately.
+    revalidatePath('/dashboard');
+    revalidatePath('/dashboard/worksheets');
+
     return Response.json({ id: copy.id }, { status: 201 });
   });
 }
