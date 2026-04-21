@@ -57,7 +57,7 @@ export default function DashboardLayout({
   );
 
   return (
-    <div className="min-h-screen bg-secondary/30 flex w-full">
+    <div className="min-h-screen bg-secondary/50 flex w-full">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-64 flex-col border-r bg-background/50 backdrop-blur-xl h-screen sticky top-0">
         <div className="p-6 flex items-center gap-2">

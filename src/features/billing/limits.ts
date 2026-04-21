@@ -1,5 +1,5 @@
 export const FREE_PLAN_LIMITS = {
-  generationsPerMonth: 10,
+  generationsPerMonth: 5,
   exportsPerMonth: 5,
 } as const;
 
