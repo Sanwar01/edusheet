@@ -30,6 +30,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
+  signUp: (email: string, password: string, fullName: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -100,6 +101,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signUp = async (email: string, password: string, fullName: string) => {
+    const { error } = await createSupabaseBrowserClient().auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName } },
+    });
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Signed up successfully');
+    }
+  };
   const refreshProfile = async () => {
     if (user) await fetchProfile(user.id);
   };
@@ -113,6 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         signOut,
         signIn,
+        signUp,
         refreshProfile,
       }}
     >
