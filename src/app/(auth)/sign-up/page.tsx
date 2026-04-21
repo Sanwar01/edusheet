@@ -84,7 +84,10 @@ export default function SignUpPage() {
               <Input
                 id="fullName"
                 placeholder="Jane Doe"
-                {...register('fullName')}
+                {...register('fullName', {
+                  required: 'Full name is required',
+                  setValueAs: (value) => value.trim(),
+                })}
                 className={errors.fullName ? 'border-destructive' : ''}
               />
               {errors.fullName && (
@@ -100,7 +103,10 @@ export default function SignUpPage() {
                 id="email"
                 type="email"
                 placeholder="teacher@school.edu"
-                {...register('email')}
+                {...register('email', {
+                  required: 'Email is required',
+                  setValueAs: (value) => value.trim(),
+                })}
                 className={errors.email ? 'border-destructive' : ''}
               />
               {errors.email && (
@@ -116,7 +122,9 @@ export default function SignUpPage() {
                 id="password"
                 type="password"
                 placeholder="••••••••"
-                {...register('password')}
+                {...register('password', {
+                  required: 'Password is required',
+                })}
                 className={errors.password ? 'border-destructive' : ''}
               />
               {errors.password && (
@@ -142,7 +150,7 @@ export default function SignUpPage() {
           <p className="mt-8 text-center text-sm text-muted-foreground">
             Already have an account?{' '}
             <Link
-              href="/login"
+              href="/sign-in"
               className="font-semibold text-primary hover:underline"
             >
               Sign in

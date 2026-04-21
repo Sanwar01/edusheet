@@ -65,7 +65,10 @@ export default function SignInPage() {
                 id="email"
                 type="email"
                 placeholder="teacher@school.edu"
-                {...register('email')}
+                {...register('email', {
+                  required: 'Email is required',
+                  setValueAs: (value) => value.trim(),
+                })}
                 className={errors.email ? 'border-destructive' : ''}
               />
               {errors.email && (
@@ -88,7 +91,9 @@ export default function SignInPage() {
               <Input
                 id="password"
                 type="password"
-                {...register('password')}
+                {...register('password', {
+                  required: 'Password is required',
+                })}
                 className={errors.password ? 'border-destructive' : ''}
               />
               {errors.password && (
