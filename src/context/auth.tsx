@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } =
+    const { data, error } =
       await createSupabaseBrowserClient().auth.signInWithPassword({
         email,
         password,
@@ -97,12 +97,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Signed in successfully');
+      toast.success(`Welcome back, ${data.user?.user_metadata.full_name}!`);
     }
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const { error } = await createSupabaseBrowserClient().auth.signUp({
+    const { data, error } = await createSupabaseBrowserClient().auth.signUp({
       email,
       password,
       options: { data: { full_name: fullName } },
@@ -110,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Signed up successfully');
+      toast.success(`Welcome ${data.user?.user_metadata.full_name}!`);
     }
   };
   const refreshProfile = async () => {
