@@ -92,3 +92,62 @@ export const plans = [
     highlighted: true,
   },
 ];
+
+export const steps = [
+  {
+    number: '01',
+    title: 'Tell us what you need',
+    description:
+      'Choose the topic, year group, worksheet type, and any details you want included.',
+  },
+  {
+    number: '02',
+    title: 'Get a first draft instantly',
+    description:
+      'A full worksheet appears in seconds, ready for you to review and adjust.',
+  },
+  {
+    number: '03',
+    title: 'Edit and download',
+    description:
+      'Make quick changes, preview the result, and export a worksheet ready for class.',
+  },
+];
+
+export const testimonials = [
+  {
+    quote: 'This saves me so much time every week.',
+    role: 'Maths tutor',
+  },
+  {
+    quote: 'I used to spend hours on this. Now it takes minutes.',
+    role: 'Primary teacher',
+  },
+  {
+    quote: 'It’s simple enough that I didn’t need to learn anything.',
+    role: 'Private tutor',
+  },
+  {
+    quote: 'Finally something that feels made for teachers.',
+    role: 'Department lead',
+  },
+];
+
+export const faqs = [
+  {
+    q: 'Is this hard to use?',
+    a: 'No. If you can type, you can use it.',
+  },
+  {
+    q: 'Can I change the worksheet afterwards?',
+    a: 'Yes. You can edit every part of it before downloading.',
+  },
+  {
+    q: 'Do I need to install anything?',
+    a: 'No. It works in your browser.',
+  },
+  {
+    q: 'Is this suitable for schools too?',
+    a: 'Yes. It works for individual teachers, tutors, and larger teaching teams.',
+  },
+];
