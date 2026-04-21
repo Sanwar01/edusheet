@@ -9,6 +9,7 @@ import {
 import { Session, User } from '@supabase/supabase-js';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 interface Profile {
   id: string;
@@ -27,6 +28,7 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -85,13 +87,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
   };
 
+  const signIn = async (email: string, password: string) => {
+    const { error } =
+      await createSupabaseBrowserClient().auth.signInWithPassword({
+        email,
+        password,
+      });
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Signed in successfully');
+    }
+  };
+
   const refreshProfile = async () => {
     if (user) await fetchProfile(user.id);
   };
 
   return (
     <AuthContext.Provider
-      value={{ session, user, profile, loading, signOut, refreshProfile }}
+      value={{
+        session,
+        user,
+        profile,
+        loading,
+        signOut,
+        signIn,
+        refreshProfile,
+      }}
     >
       {children}
     </AuthContext.Provider>
