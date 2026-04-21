@@ -5,14 +5,15 @@ import { Copy, Edit, FileText, MoreVertical, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@radix-ui/react-dropdown-menu';
+
 import { format } from 'date-fns';
 import type { DashboardData } from '@/features/dashboard/server/get-dashboard-data';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
 
 type Worksheet = DashboardData['worksheets'][number];
 
@@ -75,7 +76,9 @@ export function RecentWorksheetsCard({
                             {ws.grade_level}
                           </span>
                         )}
-                        <span>{format(new Date(ws.updated_at), 'MMM d, yyyy')}</span>
+                        <span>
+                          {format(new Date(ws.updated_at), 'MMM d, yyyy')}
+                        </span>
                         <span
                           className={`capitalize text-xs font-semibold px-2 py-0.5 rounded-md ${
                             ws.status === 'published'
@@ -98,7 +101,11 @@ export function RecentWorksheetsCard({
                     </Link>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="rounded-lg">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="rounded-lg"
+                        >
                           <MoreVertical className="w-5 h-5 text-muted-foreground" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -111,7 +118,13 @@ export function RecentWorksheetsCard({
                             <Edit className="w-4 h-4 mr-2" /> Edit Worksheet
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="cursor-pointer">
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onClick={() => {
+                            // TODO: wire up duplicate action.
+                            console.log('duplicate', ws.id);
+                          }}
+                        >
                           <Copy className="w-4 h-4 mr-2" /> Duplicate
                         </DropdownMenuItem>
                         <DropdownMenuItem
@@ -123,6 +136,7 @@ export function RecentWorksheetsCard({
                               )
                             ) {
                               // TODO: wire up delete action.
+                              console.log('delete', ws.id);
                             }
                           }}
                         >
@@ -167,8 +181,8 @@ export function RecentWorksheetsCard({
             </div>
             <h3 className="text-xl font-bold mb-2">No worksheets yet</h3>
             <p className="text-muted-foreground mb-6 max-w-md">
-              You haven&apos;t created any worksheets. Generate your first one with
-              AI in seconds.
+              You haven&apos;t created any worksheets. Generate your first one
+              with AI in seconds.
             </p>
             <Link
               href="/dashboard/worksheets/new"
