@@ -16,6 +16,7 @@ import { useAuth } from '@/context/auth';
 import Link from 'next/link';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { ThemeToggle } from '@/components/theme/theme-toggle';
 
 export default function DashboardLayout({
   children,
@@ -24,6 +25,7 @@ export default function DashboardLayout({
 }) {
   const { user, signOut } = useAuth();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const pathname = usePathname();
 
   const navItems = [
     { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
@@ -31,10 +33,10 @@ export default function DashboardLayout({
     { label: 'Billing & Plan', href: '/dashboard/billing', icon: CreditCard },
   ];
 
-  const NavLinks = () => (
+  const navLinks = (
     <div className="flex flex-col gap-2 p-4">
       {navItems.map((item) => {
-        const isActive = usePathname() === item.href;
+        const isActive = pathname === item.href;
         return (
           <Link
             key={item.href}
@@ -80,7 +82,7 @@ export default function DashboardLayout({
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <NavLinks />
+          {navLinks}
         </div>
 
         <div className="p-4 border-t mt-auto">
@@ -98,6 +100,10 @@ export default function DashboardLayout({
                 {user?.user_metadata.plan === 'pro' ? 'Pro Plan' : 'Free Plan'}
               </p>
             </div>
+          </div>
+          <div className="mb-2 flex items-center justify-between rounded-xl bg-secondary/50 px-3 py-2">
+            <span className="text-sm text-muted-foreground">Appearance</span>
+            <ThemeToggle className="h-8 w-8" />
           </div>
           <Button
             variant="ghost"
@@ -138,7 +144,13 @@ export default function DashboardLayout({
                 </Link>
               </div>
               <div className="flex-1 overflow-y-auto">
-                <NavLinks />
+                {navLinks}
+              </div>
+              <div className="border-t p-4">
+                <div className="flex items-center justify-between rounded-xl bg-secondary/50 px-3 py-2">
+                  <span className="text-sm text-muted-foreground">Appearance</span>
+                  <ThemeToggle className="h-8 w-8" />
+                </div>
               </div>
             </SheetContent>
           </Sheet>
