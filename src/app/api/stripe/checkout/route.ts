@@ -1,6 +1,10 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { getStripeClient } from '@/lib/stripe/client';
-import { apiJsonError, handleUnknownError, withApiErrorHandling } from '@/lib/api/errors';
+import {
+  apiJsonError,
+  handleUnknownError,
+  withApiErrorHandling,
+} from '@/lib/api/errors';
 import { getServerEnv, publicEnv } from '@/lib/env';
 
 const TRIAL_DAYS = 7;
@@ -16,7 +20,16 @@ export async function POST(req: Request) {
     if (!user?.email) return apiJsonError('Unauthorized', 401);
 
     if (!STRIPE_PRO_PRICE_ID?.trim()) {
-      return apiJsonError('Billing is not configured (missing STRIPE_PRO_PRICE_ID).', 503);
+      return apiJsonError(
+        'Billing is not configured (missing STRIPE_PRO_PRICE_ID).',
+        503,
+      );
+    }
+    if (!STRIPE_PRO_PRICE_ID.startsWith('price_')) {
+      return apiJsonError(
+        'Billing is not configured correctly: STRIPE_PRO_PRICE_ID must be a Stripe Price ID (price_...), not a Product ID.',
+        503,
+      );
     }
 
     const { data: sub } = await supabase
@@ -34,7 +47,10 @@ export async function POST(req: Request) {
     }
 
     if (wantsTrial && sub?.stripe_subscription_id) {
-      return apiJsonError('Free trial is only available for first-time upgrades.', 409);
+      return apiJsonError(
+        'Free trial is only available for first-time upgrades.',
+        409,
+      );
     }
 
     let stripe;
@@ -50,10 +66,12 @@ export async function POST(req: Request) {
         customer: sub?.stripe_customer_id ?? undefined,
         customer_email: sub?.stripe_customer_id ? undefined : user.email,
         line_items: [{ price: STRIPE_PRO_PRICE_ID, quantity: 1 }],
-        success_url: `${publicEnv.NEXT_PUBLIC_APP_URL}/dashboard/billing?success=1`,
-        cancel_url: `${publicEnv.NEXT_PUBLIC_APP_URL}/dashboard/billing?canceled=1`,
+        success_url: `${publicEnv.NEXT_PUBLIC_BASE_URL}/dashboard/billing?success=1`,
+        cancel_url: `${publicEnv.NEXT_PUBLIC_BASE_URL}/dashboard/billing?canceled=1`,
         metadata: { user_id: user.id, flow: wantsTrial ? 'trial' : 'upgrade' },
-        subscription_data: wantsTrial ? { trial_period_days: TRIAL_DAYS } : undefined,
+        subscription_data: wantsTrial
+          ? { trial_period_days: TRIAL_DAYS }
+          : undefined,
       });
 
       if (!session.url) {
@@ -62,6 +80,20 @@ export async function POST(req: Request) {
 
       return Response.json({ url: session.url });
     } catch (e) {
+      const maybeStripeError = e as {
+        code?: string;
+        param?: string;
+        message?: string;
+      };
+      if (
+        maybeStripeError?.code === 'resource_missing' &&
+        maybeStripeError?.param === 'line_items[0][price]'
+      ) {
+        return apiJsonError(
+          'Billing configuration invalid: STRIPE_PRO_PRICE_ID was not found in Stripe. Use a valid test-mode Price ID (price_...).',
+          503,
+        );
+      }
       return handleUnknownError('POST /api/stripe/checkout', e);
     }
   });

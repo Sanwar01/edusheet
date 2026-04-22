@@ -1,6 +1,10 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { getStripeClient } from '@/lib/stripe/client';
-import { apiJsonError, handleUnknownError, withApiErrorHandling } from '@/lib/api/errors';
+import {
+  apiJsonError,
+  handleUnknownError,
+  withApiErrorHandling,
+} from '@/lib/api/errors';
 import { publicEnv } from '@/lib/env';
 
 export async function POST() {
@@ -32,7 +36,7 @@ export async function POST() {
     try {
       const session = await stripe.billingPortal.sessions.create({
         customer: sub.stripe_customer_id,
-        return_url: `${publicEnv.NEXT_PUBLIC_APP_URL}/dashboard/billing`,
+        return_url: `${publicEnv.NEXT_PUBLIC_BASE_URL}/dashboard/billing`,
       });
 
       if (!session.url) {

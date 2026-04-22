@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/auth';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 
@@ -26,6 +26,33 @@ export default function DashboardLayout({
   const { user, signOut } = useAuth();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const pathname = usePathname();
+  const [planLabel, setPlanLabel] = useState<'Pro Plan' | 'Free Plan'>(
+    user?.user_metadata.plan === 'pro' ? 'Pro Plan' : 'Free Plan',
+  );
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadSubscriptionStatus() {
+      try {
+        const res = await fetch('/api/subscription', {
+          method: 'GET',
+          cache: 'no-store',
+        });
+        if (!res.ok) return;
+        const json = (await res.json()) as { isPro?: boolean };
+        if (!active) return;
+        setPlanLabel(json.isPro ? 'Pro Plan' : 'Free Plan');
+      } catch {
+        // Keep fallback label from auth metadata when request fails.
+      }
+    }
+
+    loadSubscriptionStatus();
+    return () => {
+      active = false;
+    };
+  }, [pathname]);
 
   const navItems = [
     { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
@@ -97,7 +124,7 @@ export default function DashboardLayout({
                 {user?.user_metadata.full_name || 'Teacher'}
               </p>
               <p className="text-xs text-muted-foreground truncate">
-                {user?.user_metadata.plan === 'pro' ? 'Pro Plan' : 'Free Plan'}
+                {planLabel}
               </p>
             </div>
           </div>

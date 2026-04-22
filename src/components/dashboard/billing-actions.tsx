@@ -8,9 +8,11 @@ import { fetchJson } from '@/lib/api/client';
 export function BillingActions({
   isPro,
   canOpenPortal,
+  mode = 'full',
 }: {
   isPro: boolean;
   canOpenPortal: boolean;
+  mode?: 'full' | 'upgradeOnly';
 }) {
   const [loadingCheckout, setLoadingCheckout] = useState(false);
   const [loadingTrial, setLoadingTrial] = useState(false);
@@ -29,7 +31,8 @@ export function BillingActions({
       else throw new Error('Checkout URL is missing.');
     } catch (error) {
       toast.error('Checkout failed', {
-        description: error instanceof Error ? error.message : 'Please try again.',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
       });
     } finally {
       setLoadingCheckout(false);
@@ -53,7 +56,8 @@ export function BillingActions({
       else throw new Error('Checkout URL is missing.');
     } catch (error) {
       toast.error('Free trial failed', {
-        description: error instanceof Error ? error.message : 'Please try again.',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
       });
     } finally {
       setLoadingTrial(false);
@@ -73,7 +77,8 @@ export function BillingActions({
       else throw new Error('Billing portal URL is missing.');
     } catch (error) {
       toast.error('Billing portal failed', {
-        description: error instanceof Error ? error.message : 'Please try again.',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
       });
     } finally {
       setLoadingPortal(false);
@@ -81,32 +86,36 @@ export function BillingActions({
   }
 
   return (
-    <div className="mt-4 flex flex-wrap gap-3">
+    <div className="mt-4 flex flex-wrap gap-3 justify-center items-center">
       {!isPro ? (
         <>
           <Button onClick={goToCheckout} disabled={loadingCheckout}>
             {loadingCheckout ? 'Loading...' : 'Upgrade to Pro'}
           </Button>
-          <Button
-            variant="secondary"
-            onClick={startFreeTrial}
-            disabled={loadingTrial}
-          >
-            {loadingTrial ? 'Loading...' : 'Start Free Trial'}
-          </Button>
+          {mode === 'full' ? (
+            <Button
+              variant="secondary"
+              onClick={startFreeTrial}
+              disabled={loadingTrial}
+            >
+              {loadingTrial ? 'Loading...' : 'Start Free Trial'}
+            </Button>
+          ) : null}
         </>
       ) : (
         <p className="text-sm text-emerald-700">
           You are on Pro. Manage billing in the portal.
         </p>
       )}
-      <Button
-        variant="outline"
-        onClick={goToPortal}
-        disabled={!canOpenPortal || loadingPortal}
-      >
-        {loadingPortal ? 'Loading...' : 'Manage billing'}
-      </Button>
+      {mode === 'full' ? (
+        <Button
+          variant="outline"
+          onClick={goToPortal}
+          disabled={!canOpenPortal || loadingPortal}
+        >
+          {loadingPortal ? 'Loading...' : 'Manage billing'}
+        </Button>
+      ) : null}
     </div>
   );
 }

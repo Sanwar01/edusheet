@@ -1,7 +1,7 @@
 type PublicEnv = {
   NEXT_PUBLIC_SUPABASE_URL: string;
   NEXT_PUBLIC_SUPABASE_ANON_KEY: string;
-  NEXT_PUBLIC_APP_URL: string;
+  NEXT_PUBLIC_BASE_URL: string;
 };
 
 type ServerEnv = {
@@ -41,8 +41,8 @@ export const publicEnv: PublicEnv = {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     );
   },
-  get NEXT_PUBLIC_APP_URL() {
-    return requireEnv('NEXT_PUBLIC_APP_URL', process.env.NEXT_PUBLIC_APP_URL);
+  get NEXT_PUBLIC_BASE_URL() {
+    return requireEnv('NEXT_PUBLIC_BASE_URL', process.env.NEXT_PUBLIC_BASE_URL);
   },
 };
 
