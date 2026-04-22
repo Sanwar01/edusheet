@@ -63,12 +63,16 @@ export function NewWorksheetGeneratorForm({
     state.numQuestions >= 1 &&
     state.numQuestions <= 30;
   const canGenerate =
-    hasTopic && hasSubject && hasQuestionTypes && hasValidQuestionCount && !state.loading;
+    hasTopic &&
+    hasSubject &&
+    hasQuestionTypes &&
+    hasValidQuestionCount &&
+    !state.loading;
   const instructionsLength = state.additionalInstructions.length;
   const estimatedMinutes = Math.max(5, Math.round(state.numQuestions * 1.5));
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <main className="container max-w-4xl py-8">
         <div className="flex flex-row items-center justify-between gap-2">
           <div className="flex flex-col items-start gap-2">
@@ -94,18 +98,26 @@ export function NewWorksheetGeneratorForm({
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
             <span>
-              Questions: <span className="font-medium text-foreground">{state.numQuestions}</span>
+              Questions:{' '}
+              <span className="font-medium text-foreground">
+                {state.numQuestions}
+              </span>
             </span>
             <span>•</span>
             <span>
               Est. completion time:{' '}
-              <span className="font-medium text-foreground">~{estimatedMinutes} min</span>
+              <span className="font-medium text-foreground">
+                ~{estimatedMinutes} min
+              </span>
             </span>
             <span>•</span>
             <span>
               Type:{' '}
               <span className="font-medium text-foreground">
-                {WORKSHEET_TYPES.find((t) => t.id === state.worksheetType)?.label}
+                {
+                  WORKSHEET_TYPES.find((t) => t.id === state.worksheetType)
+                    ?.label
+                }
               </span>
             </span>
           </div>
@@ -128,7 +140,10 @@ export function NewWorksheetGeneratorForm({
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Subject</Label>
-                <Select value={state.subject} onValueChange={actions.setSubject}>
+                <Select
+                  value={state.subject}
+                  onValueChange={actions.setSubject}
+                >
                   <SelectTrigger className="h-12">
                     <SelectValue placeholder="Select subject" />
                   </SelectTrigger>
@@ -172,7 +187,9 @@ export function NewWorksheetGeneratorForm({
                 <Label>Worksheet Type</Label>
                 <Select
                   value={state.worksheetType}
-                  onValueChange={(v: WorksheetType) => actions.setWorksheetType(v)}
+                  onValueChange={(v: WorksheetType) =>
+                    actions.setWorksheetType(v)
+                  }
                 >
                   <SelectTrigger className="h-12">
                     <SelectValue placeholder="Select worksheet type" />
@@ -196,7 +213,9 @@ export function NewWorksheetGeneratorForm({
                   min={1}
                   max={30}
                   value={state.numQuestions}
-                  onChange={(e) => actions.setNumQuestions(Number(e.target.value))}
+                  onChange={(e) =>
+                    actions.setNumQuestions(Number(e.target.value))
+                  }
                 />
                 <div className="flex flex-wrap gap-2">
                   {[5, 10, 15].map((count) => (
@@ -204,7 +223,9 @@ export function NewWorksheetGeneratorForm({
                       key={count}
                       type="button"
                       size="sm"
-                      variant={state.numQuestions === count ? 'default' : 'outline'}
+                      variant={
+                        state.numQuestions === count ? 'default' : 'outline'
+                      }
                       className="h-7 px-2 text-xs"
                       onClick={() => actions.setNumQuestions(count)}
                     >
@@ -257,7 +278,10 @@ export function NewWorksheetGeneratorForm({
                         checked={state.questionTypes.includes(qt.id)}
                         onCheckedChange={(checked) => {
                           if (checked) {
-                            actions.setQuestionTypes([...state.questionTypes, qt.id]);
+                            actions.setQuestionTypes([
+                              ...state.questionTypes,
+                              qt.id,
+                            ]);
                           } else {
                             actions.setQuestionTypes(
                               state.questionTypes.filter((t) => t !== qt.id),
@@ -285,13 +309,17 @@ export function NewWorksheetGeneratorForm({
               <Label>Additional Instructions (optional)</Label>
               <Textarea
                 value={state.additionalInstructions}
-                onChange={(e) => actions.setAdditionalInstructions(e.target.value)}
+                onChange={(e) =>
+                  actions.setAdditionalInstructions(e.target.value)
+                }
                 placeholder="e.g. Include a bonus question, make it fun and engaging, focus on vocabulary..."
                 rows={3}
                 maxLength={1000}
               />
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Optional teacher notes for tone, style, or constraints.</span>
+                <span>
+                  Optional teacher notes for tone, style, or constraints.
+                </span>
                 <span>{instructionsLength}/1000</span>
               </div>
             </div>
@@ -312,7 +340,8 @@ export function NewWorksheetGeneratorForm({
             </div>
             {!canGenerate ? (
               <p className="text-xs text-muted-foreground">
-                Complete topic, question count, and question type selections to generate.
+                Complete topic, question count, and question type selections to
+                generate.
               </p>
             ) : null}
           </div>

@@ -26,6 +26,9 @@ export default function DashboardLayout({
   const { user, signOut } = useAuth();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const pathname = usePathname();
+  const isWorksheetEditorRoute = /^\/dashboard\/worksheets\/[^/]+(?:\/edit)?$/.test(
+    pathname,
+  );
   const [planLabel, setPlanLabel] = useState<'Pro Plan' | 'Free Plan'>(
     user?.user_metadata.plan === 'pro' ? 'Pro Plan' : 'Free Plan',
   );
@@ -85,8 +88,16 @@ export default function DashboardLayout({
     </div>
   );
 
+  if (isWorksheetEditorRoute) {
+    return (
+      <div className="min-h-screen w-full bg-background">
+        <main className="w-full">{children}</main>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-secondary/50 flex w-full">
+    <div className="min-h-screen bg-background flex w-full">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-64 flex-col border-r bg-background/50 backdrop-blur-xl h-screen sticky top-0">
         <div className="p-6 flex items-center gap-2">
@@ -108,12 +119,10 @@ export default function DashboardLayout({
           </Link>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          {navLinks}
-        </div>
+        <div className="flex-1 overflow-y-auto">{navLinks}</div>
 
         <div className="p-4 border-t mt-auto">
-          <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-secondary/50 mb-2">
+          <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-background mb-2">
             <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">
               {user?.user_metadata.full_name?.charAt(0) ||
                 user?.email?.charAt(0) ||
@@ -128,7 +137,7 @@ export default function DashboardLayout({
               </p>
             </div>
           </div>
-          <div className="mb-2 flex items-center justify-between rounded-xl bg-secondary/50 px-3 py-2">
+          <div className="mb-2 flex items-center justify-between rounded-xl bg-background px-3 py-2">
             <span className="text-sm text-muted-foreground">Appearance</span>
             <ThemeToggle className="h-8 w-8" />
           </div>
@@ -170,12 +179,12 @@ export default function DashboardLayout({
                   New Worksheet
                 </Link>
               </div>
-              <div className="flex-1 overflow-y-auto">
-                {navLinks}
-              </div>
+              <div className="flex-1 overflow-y-auto">{navLinks}</div>
               <div className="border-t p-4">
                 <div className="flex items-center justify-between rounded-xl bg-secondary/50 px-3 py-2">
-                  <span className="text-sm text-muted-foreground">Appearance</span>
+                  <span className="text-sm text-muted-foreground">
+                    Appearance
+                  </span>
                   <ThemeToggle className="h-8 w-8" />
                 </div>
               </div>
@@ -183,8 +192,8 @@ export default function DashboardLayout({
           </Sheet>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          <div className="max-w-6xl mx-auto">{children}</div>
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-background">
+          <div className="max-w-6xl mx-auto ">{children}</div>
         </main>
       </div>
     </div>
