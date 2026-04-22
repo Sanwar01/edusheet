@@ -12,6 +12,7 @@ type UseDashboardDataResult = {
   pageSize: number;
   goToNextPage: () => void;
   goToPreviousPage: () => void;
+  refetch: () => void;
 };
 
 export function useDashboardData(): UseDashboardDataResult {
@@ -20,6 +21,7 @@ export function useDashboardData(): UseDashboardDataResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -63,7 +65,7 @@ export function useDashboardData(): UseDashboardDataResult {
     return () => {
       isMounted = false;
     };
-  }, [currentPage]);
+  }, [currentPage, refreshTick]);
 
   const totalPages = Math.max(
     1,
@@ -78,6 +80,10 @@ export function useDashboardData(): UseDashboardDataResult {
     setCurrentPage((prev) => Math.max(prev - 1, 1));
   };
 
+  const refetch = () => {
+    setRefreshTick((prev) => prev + 1);
+  };
+
   return {
     data,
     loading,
@@ -87,5 +93,6 @@ export function useDashboardData(): UseDashboardDataResult {
     pageSize,
     goToNextPage,
     goToPreviousPage,
+    refetch,
   };
 }

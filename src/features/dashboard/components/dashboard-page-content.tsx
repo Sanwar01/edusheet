@@ -27,6 +27,7 @@ export function DashboardPageContent({
     totalPages,
     goToNextPage,
     goToPreviousPage,
+    refetch,
   } = useDashboardData();
   const isPro = isProPlan(profile?.plan, profile?.status);
 
@@ -57,6 +58,7 @@ export function DashboardPageContent({
         totalPages={totalPages}
         onPreviousPage={goToPreviousPage}
         onNextPage={goToNextPage}
+        onWorksheetChanged={refetch}
       />
     </>
   );

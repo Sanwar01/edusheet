@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { UpdateWorksheetSchema } from '@/lib/validators/worksheet';
 import { snapshotWorksheetVersion } from '@/features/worksheets/versioning';
 import { apiJsonError, logApiError, withApiErrorHandling } from '@/lib/api/errors';
+import { revalidatePath } from 'next/cache';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   return withApiErrorHandling('GET /api/worksheets/[id]', async () => {
@@ -77,8 +78,20 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     } = await supabase.auth.getUser();
     if (!user) return apiJsonError('Unauthorized', 401);
 
-    const { error } = await supabase.from('worksheets').delete().eq('id', id).eq('user_id', user.id);
+    const { data, error } = await supabase
+      .from('worksheets')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .select('id')
+      .single();
     if (error) return apiJsonError(error.message, 500);
+    if (!data) return apiJsonError('Worksheet not found', 404);
+
+    // Keep server-rendered dashboard worksheet lists in sync after delete.
+    revalidatePath('/dashboard');
+    revalidatePath('/dashboard/worksheets');
+
     return Response.json({ ok: true });
   });
 }

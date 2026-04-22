@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Copy, Edit, FileText, MoreVertical, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,16 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { toast } from 'sonner';
+import { assertApiOk } from '@/lib/api/client';
 
 type Worksheet = DashboardData['worksheets'][number];
 
@@ -24,6 +35,7 @@ type RecentWorksheetsCardProps = {
   totalPages: number;
   onPreviousPage: () => void;
   onNextPage: () => void;
+  onWorksheetChanged: () => void;
 };
 
 export function RecentWorksheetsCard({
@@ -33,7 +45,48 @@ export function RecentWorksheetsCard({
   totalPages,
   onPreviousPage,
   onNextPage,
+  onWorksheetChanged,
 }: RecentWorksheetsCardProps) {
+  const [worksheetToDelete, setWorksheetToDelete] = useState<Worksheet | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const duplicateWorksheet = async (worksheetId: string) => {
+    try {
+      const res = await fetch(`/api/worksheets/${worksheetId}/duplicate`, {
+        method: 'POST',
+      });
+      await assertApiOk(res, 'Failed to duplicate worksheet.');
+      toast.success('Worksheet duplicated');
+      onWorksheetChanged();
+    } catch (error) {
+      toast.error('Duplicate failed', {
+        description:
+          error instanceof Error ? error.message : 'Could not duplicate worksheet.',
+      });
+    }
+  };
+
+  const deleteWorksheet = async () => {
+    if (!worksheetToDelete) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/worksheets/${worksheetToDelete.id}`, {
+        method: 'DELETE',
+      });
+      await assertApiOk(res, 'Failed to delete worksheet.');
+      toast.success('Worksheet deleted');
+      setWorksheetToDelete(null);
+      onWorksheetChanged();
+    } catch (error) {
+      toast.error('Delete failed', {
+        description:
+          error instanceof Error ? error.message : 'Could not delete worksheet.',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <>
       <h2 className="text-xl font-bold font-display tracking-tight text-foreground mb-4">
@@ -120,25 +173,13 @@ export function RecentWorksheetsCard({
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="cursor-pointer"
-                          onClick={() => {
-                            // TODO: wire up duplicate action.
-                            console.log('duplicate', ws.id);
-                          }}
+                          onClick={() => duplicateWorksheet(ws.id)}
                         >
                           <Copy className="w-4 h-4 mr-2" /> Duplicate
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-destructive focus:bg-destructive/10 cursor-pointer"
-                          onClick={() => {
-                            if (
-                              confirm(
-                                'Are you sure you want to delete this worksheet?',
-                              )
-                            ) {
-                              // TODO: wire up delete action.
-                              console.log('delete', ws.id);
-                            }
-                          }}
+                          onClick={() => setWorksheetToDelete(ws)}
                         >
                           <Trash2 className="w-4 h-4 mr-2" /> Delete
                         </DropdownMenuItem>
@@ -193,6 +234,41 @@ export function RecentWorksheetsCard({
           </div>
         )}
       </Card>
+      <Dialog
+        open={Boolean(worksheetToDelete)}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) setWorksheetToDelete(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete worksheet?</DialogTitle>
+            <DialogDescription>
+              {worksheetToDelete
+                ? `This will permanently delete "${worksheetToDelete.title}". This action cannot be undone.`
+                : 'This action cannot be undone.'}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setWorksheetToDelete(null)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={deleteWorksheet}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
