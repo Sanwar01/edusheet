@@ -4,12 +4,13 @@ import Link from 'next/link';
 import { ArrowRight, FileText, Printer, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FREE_PLAN_LIMITS } from '@/features/billing/limits';
 
 type DashboardStatsGridProps = {
   loading: boolean;
   isPro: boolean;
   plan?: string | null;
+  generationLimit: number | null;
+  exportLimit: number | null;
   worksheetCount: number;
   generationUsage: string;
   exportUsage: string;
@@ -19,6 +20,8 @@ export function DashboardStatsGrid({
   loading,
   isPro,
   plan,
+  generationLimit,
+  exportLimit,
   worksheetCount,
   generationUsage,
   exportUsage,
@@ -61,7 +64,7 @@ export function DashboardStatsGrid({
               <p className="text-xs text-muted-foreground mt-1">
                 {isPro
                   ? 'Unlimited'
-                  : `of ${FREE_PLAN_LIMITS.generationsPerMonth} limit this month`}
+                  : `of ${generationLimit ?? 0} limit this month`}
               </p>
             </>
           )}
@@ -86,7 +89,7 @@ export function DashboardStatsGrid({
               <p className="text-xs text-muted-foreground mt-1">
                 {isPro
                   ? 'Unlimited'
-                  : `of ${FREE_PLAN_LIMITS.exportsPerMonth} limit this month`}
+                  : `of ${exportLimit ?? 0} limit this month`}
               </p>
             </>
           )}

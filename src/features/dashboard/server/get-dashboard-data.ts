@@ -1,4 +1,4 @@
-import { getMonthStartIso, isProPlan } from '@/features/billing/limits';
+import { getMonthStartIso, getPlanLimits, isProPlan } from '@/features/billing/limits';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type DashboardData = {
@@ -11,6 +11,11 @@ export type DashboardData = {
     updated_at: string;
   }>;
   worksheetCount: number;
+  plan: string;
+  status: string | null;
+  isPro: boolean;
+  generationLimit: number | null;
+  exportLimit: number | null;
   generationUsage: string;
   exportUsage: string;
 };
@@ -69,6 +74,9 @@ export async function getDashboardData({
     subscriptionRes.data?.plan,
     subscriptionRes.data?.status,
   );
+  const limits = getPlanLimits(subscriptionRes.data?.plan, subscriptionRes.data?.status);
+  const generationCount = aiMonthCount.count ?? 0;
+  const exportCount = exportsMonthCount.count ?? 0;
   const worksheets = (worksheetsRes.data ?? []).map((worksheet) => ({
     ...worksheet,
     status: worksheet.status ?? 'draft',
@@ -77,7 +85,18 @@ export async function getDashboardData({
   return {
     worksheets,
     worksheetCount: worksheetsCount.count ?? 0,
-    generationUsage: isPro ? '∞' : `${aiMonthCount.count ?? 0}/5`,
-    exportUsage: isPro ? '∞' : `${exportsMonthCount.count ?? 0}/5`,
+    plan: subscriptionRes.data?.plan ?? 'free',
+    status: subscriptionRes.data?.status ?? null,
+    isPro,
+    generationLimit: limits.generationsPerMonth,
+    exportLimit: limits.exportsPerMonth,
+    generationUsage:
+      limits.generationsPerMonth === null
+        ? String(generationCount)
+        : `${generationCount}/${limits.generationsPerMonth}`,
+    exportUsage:
+      limits.exportsPerMonth === null
+        ? String(exportCount)
+        : `${exportCount}/${limits.exportsPerMonth}`,
   };
 }

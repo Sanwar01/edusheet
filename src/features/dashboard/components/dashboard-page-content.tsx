@@ -29,7 +29,7 @@ export function DashboardPageContent({
     goToPreviousPage,
     refetch,
   } = useDashboardData();
-  const isPro = isProPlan(profile?.plan, profile?.status);
+  const isPro = data?.isPro ?? isProPlan(profile?.plan, profile?.status);
 
   if (error) {
     return <DashboardErrorState message={error} />;
@@ -39,6 +39,9 @@ export function DashboardPageContent({
   const worksheetCount = data?.worksheetCount ?? 0;
   const generationUsage = data?.generationUsage ?? '0/5';
   const exportUsage = data?.exportUsage ?? '0/5';
+  const generationLimit = data?.generationLimit ?? 5;
+  const exportLimit = data?.exportLimit ?? 5;
+  const plan = data?.plan ?? profile?.plan;
 
   return (
     <>
@@ -46,7 +49,9 @@ export function DashboardPageContent({
       <DashboardStatsGrid
         loading={loading}
         isPro={isPro}
-        plan={profile?.plan}
+        plan={plan}
+        generationLimit={generationLimit}
+        exportLimit={exportLimit}
         worksheetCount={worksheetCount}
         generationUsage={generationUsage}
         exportUsage={exportUsage}
