@@ -6,7 +6,7 @@ import { useAuth } from '@/context/auth';
 import { DashboardHeader } from './dashboard-header';
 import { DashboardStatsGrid } from './dashboard-stats-grid';
 import { DashboardErrorState } from './dashboard-error-state';
-import { RecentWorksheetsCard } from './recent-worksheets-card';
+import { WorksheetsListCard } from '@/features/worksheets/components/worksheets-list-card';
 
 type DashboardProfile = {
   plan?: string | null;
@@ -51,7 +51,7 @@ export function DashboardPageContent({
         generationUsage={generationUsage}
         exportUsage={exportUsage}
       />
-      <RecentWorksheetsCard
+      <WorksheetsListCard
         loading={loading}
         worksheets={worksheets}
         currentPage={currentPage}
@@ -59,6 +59,7 @@ export function DashboardPageContent({
         onPreviousPage={goToPreviousPage}
         onNextPage={goToNextPage}
         onWorksheetChanged={refetch}
+        title="Recent Worksheets"
       />
     </>
   );

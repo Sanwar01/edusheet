@@ -6,9 +6,7 @@ import { Copy, Edit, FileText, MoreVertical, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-
 import { format } from 'date-fns';
-import type { DashboardData } from '@/features/dashboard/server/get-dashboard-data';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -26,28 +24,46 @@ import {
 import { toast } from 'sonner';
 import { assertApiOk } from '@/lib/api/client';
 
-type Worksheet = DashboardData['worksheets'][number];
-
-type RecentWorksheetsCardProps = {
-  loading: boolean;
-  worksheets: Worksheet[];
-  currentPage: number;
-  totalPages: number;
-  onPreviousPage: () => void;
-  onNextPage: () => void;
-  onWorksheetChanged: () => void;
+export type WorksheetListItem = {
+  id: string;
+  title: string;
+  subject: string | null;
+  grade_level: string | null;
+  status: string;
+  updated_at: string;
 };
 
-export function RecentWorksheetsCard({
+type WorksheetsListCardProps = {
+  loading: boolean;
+  worksheets: WorksheetListItem[];
+  onWorksheetChanged: () => void;
+  title?: string;
+  showPagination?: boolean;
+  currentPage?: number;
+  totalPages?: number;
+  onPreviousPage?: () => void;
+  onNextPage?: () => void;
+  emptyTitle?: string;
+  emptyDescription?: string;
+  emptyAction?: React.ReactNode;
+};
+
+export function WorksheetsListCard({
   loading,
   worksheets,
-  currentPage,
-  totalPages,
+  onWorksheetChanged,
+  title = 'Recent Worksheets',
+  showPagination = true,
+  currentPage = 1,
+  totalPages = 1,
   onPreviousPage,
   onNextPage,
-  onWorksheetChanged,
-}: RecentWorksheetsCardProps) {
-  const [worksheetToDelete, setWorksheetToDelete] = useState<Worksheet | null>(null);
+  emptyTitle = 'No worksheets yet',
+  emptyDescription = "You haven't created any worksheets. Generate your first one with AI in seconds.",
+  emptyAction,
+}: WorksheetsListCardProps) {
+  const [worksheetToDelete, setWorksheetToDelete] =
+    useState<WorksheetListItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const duplicateWorksheet = async (worksheetId: string) => {
@@ -89,12 +105,12 @@ export function RecentWorksheetsCard({
 
   return (
     <>
-      <h2 className="text-xl font-bold font-display tracking-tight text-foreground mb-4">
-        Recent Worksheets
+      <h2 className="mb-4 text-xl font-bold font-display tracking-tight text-foreground">
+        {title}
       </h2>
-      <Card className="border-border/50 shadow-sm bg-card/50 backdrop-blur-sm overflow-hidden">
+      <Card className="overflow-hidden border-border/50 bg-card/50 shadow-sm backdrop-blur-sm">
         {loading ? (
-          <div className="p-6 space-y-4">
+          <div className="space-y-4 p-6">
             {[1, 2, 3].map((i) => (
               <Skeleton key={i} className="h-16 w-full rounded-xl" />
             ))}
@@ -105,35 +121,33 @@ export function RecentWorksheetsCard({
               {worksheets.map((ws) => (
                 <div
                   key={ws.id}
-                  className="p-4 sm:p-6 flex items-center justify-between hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between p-4 transition-colors hover:bg-muted/50 sm:p-6"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="hidden sm:flex w-12 h-12 rounded-xl bg-primary/10 text-primary items-center justify-center shrink-0">
-                      <FileText className="w-6 h-6" />
+                    <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:flex">
+                      <FileText className="h-6 w-6" />
                     </div>
                     <div>
                       <Link
                         href={`/dashboard/worksheets/${ws.id}/edit`}
-                        className="font-semibold text-lg hover:text-primary transition-colors line-clamp-1"
+                        className="line-clamp-1 text-lg font-semibold transition-colors hover:text-primary"
                       >
                         {ws.title}
                       </Link>
-                      <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1 flex-wrap">
+                      <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                         {ws.subject && (
-                          <span className="bg-secondary px-2 py-0.5 rounded-md">
+                          <span className="rounded-md bg-secondary px-2 py-0.5">
                             {ws.subject}
                           </span>
                         )}
                         {ws.grade_level && (
-                          <span className="bg-secondary px-2 py-0.5 rounded-md">
+                          <span className="rounded-md bg-secondary px-2 py-0.5">
                             {ws.grade_level}
                           </span>
                         )}
-                        <span>
-                          {format(new Date(ws.updated_at), 'MMM d, yyyy')}
-                        </span>
+                        <span>{format(new Date(ws.updated_at), 'MMM d, yyyy')}</span>
                         <span
-                          className={`capitalize text-xs font-semibold px-2 py-0.5 rounded-md ${
+                          className={`rounded-md px-2 py-0.5 text-xs font-semibold capitalize ${
                             ws.status === 'published'
                               ? 'bg-emerald-100 text-emerald-700'
                               : 'bg-amber-100 text-amber-700'
@@ -148,18 +162,14 @@ export function RecentWorksheetsCard({
                   <div className="flex items-center gap-2">
                     <Link
                       href={`/dashboard/worksheets/${ws.id}/edit`}
-                      className="hidden sm:inline-flex h-9 px-4 items-center justify-center rounded-lg border bg-background text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
+                      className="hidden h-9 items-center justify-center rounded-lg border bg-background px-4 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground sm:inline-flex"
                     >
                       Edit
                     </Link>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="rounded-lg"
-                        >
-                          <MoreVertical className="w-5 h-5 text-muted-foreground" />
+                        <Button variant="ghost" size="icon" className="rounded-lg">
+                          <MoreVertical className="h-5 w-5 text-muted-foreground" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
@@ -168,20 +178,20 @@ export function RecentWorksheetsCard({
                             href={`/dashboard/worksheets/${ws.id}/edit`}
                             className="cursor-pointer"
                           >
-                            <Edit className="w-4 h-4 mr-2" /> Edit Worksheet
+                            <Edit className="mr-2 h-4 w-4" /> Edit Worksheet
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="cursor-pointer"
                           onClick={() => duplicateWorksheet(ws.id)}
                         >
-                          <Copy className="w-4 h-4 mr-2" /> Duplicate
+                          <Copy className="mr-2 h-4 w-4" /> Duplicate
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          className="text-destructive focus:bg-destructive/10 cursor-pointer"
+                          className="cursor-pointer text-destructive focus:bg-destructive/10"
                           onClick={() => setWorksheetToDelete(ws)}
                         >
-                          <Trash2 className="w-4 h-4 mr-2" /> Delete
+                          <Trash2 className="mr-2 h-4 w-4" /> Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -189,48 +199,49 @@ export function RecentWorksheetsCard({
                 </div>
               ))}
             </div>
-            <div className="flex items-center justify-between border-t px-4 py-3 sm:px-6">
-              <p className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={onPreviousPage}
-                  disabled={currentPage === 1 || loading}
-                >
-                  Previous
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={onNextPage}
-                  disabled={currentPage === totalPages || loading}
-                >
-                  Next
-                </Button>
+            {showPagination ? (
+              <div className="flex items-center justify-between border-t px-4 py-3 sm:px-6">
+                <p className="text-sm text-muted-foreground">
+                  Page {currentPage} of {totalPages}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={onPreviousPage}
+                    disabled={currentPage === 1 || loading}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={onNextPage}
+                    disabled={currentPage === totalPages || loading}
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
-            </div>
+            ) : null}
           </>
         ) : (
-          <div className="p-12 text-center flex flex-col items-center justify-center">
-            <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-4">
-              <FileText className="w-8 h-8" />
+          <div className="flex flex-col items-center justify-center p-12 text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <FileText className="h-8 w-8" />
             </div>
-            <h3 className="text-xl font-bold mb-2">No worksheets yet</h3>
-            <p className="text-muted-foreground mb-6 max-w-md">
-              You haven&apos;t created any worksheets. Generate your first one
-              with AI in seconds.
-            </p>
-            <Link
-              href="/dashboard/worksheets/new"
-              className="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-6 font-medium text-primary-foreground shadow-md"
-            >
-              Create First Worksheet
-            </Link>
+            <h3 className="mb-2 text-xl font-bold">{emptyTitle}</h3>
+            <p className="mb-6 max-w-md text-muted-foreground">{emptyDescription}</p>
+            {emptyAction ?? (
+              <Link
+                href="/dashboard/worksheets/new"
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-6 font-medium text-primary-foreground shadow-md"
+              >
+                Create First Worksheet
+              </Link>
+            )}
           </div>
         )}
       </Card>
