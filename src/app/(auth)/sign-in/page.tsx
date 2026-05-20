@@ -9,6 +9,7 @@ import { Loader2, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth';
 import { useForm } from 'react-hook-form';
+import Image from 'next/image';
 
 type FormData = {
   email: string;
@@ -117,7 +118,7 @@ export default function SignInPage() {
           </form>
 
           <p className="mt-8 text-center text-sm text-muted-foreground">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link
               href="/sign-up"
               className="font-semibold text-primary hover:underline"
@@ -130,16 +131,19 @@ export default function SignInPage() {
 
       {/* Visual Section */}
       <div className="hidden md:block relative bg-muted overflow-hidden">
-        <img
-          src={`${process.env.NEXT_PUBLIC_BASE_URL}/images/hero-bg.png`}
+        <Image
+          src="/images/hero-bg.png"
           alt="Abstract background"
           className="absolute inset-0 w-full h-full object-cover"
+          width={1000}
+          height={1000}
+          loading="eager"
         />
         <div className="absolute inset-0 bg-primary/20 backdrop-blur-sm mix-blend-multiply" />
         <div className="absolute inset-0 flex items-center justify-center p-12">
           <div className="bg-background/80 backdrop-blur-md p-8 rounded-3xl shadow-2xl max-w-md border border-white/20">
             <h3 className="text-2xl font-bold font-display mb-4">
-              "EduSheet AI saves me 5 hours a week."
+              &quot;EduSheet AI saves me 5 hours a week.&quot;
             </h3>
             <p className="text-lg text-muted-foreground mb-6">
               The quality of the AI generated questions is incredible. I can

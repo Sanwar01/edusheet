@@ -40,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   const fetchProfile = async (userId: string) => {
     const { data } = await createSupabaseBrowserClient()
@@ -86,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await createSupabaseBrowserClient().auth.signOut();
     setProfile(null);
+    router.replace('/sign-in');
   };
 
   const signIn = async (email: string, password: string) => {

@@ -26,9 +26,8 @@ export default function DashboardLayout({
   const { user, signOut } = useAuth();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const pathname = usePathname();
-  const isWorksheetEditorRoute = /^\/dashboard\/worksheets\/[^/]+(?:\/edit)?$/.test(
-    pathname,
-  );
+  const isWorksheetEditorRoute =
+    /^\/dashboard\/worksheets\/[^/]+(?:\/edit)?$/.test(pathname);
   const [planLabel, setPlanLabel] = useState<'Pro Plan' | 'Free Plan'>(
     user?.user_metadata.plan === 'pro' ? 'Pro Plan' : 'Free Plan',
   );
@@ -143,8 +142,8 @@ export default function DashboardLayout({
           </div>
           <Button
             variant="ghost"
-            className="w-full justify-start text-muted-foreground hover:text-foreground"
-            onClick={() => signOut()}
+            className="w-full justify-start text-muted-foreground"
+            onClick={signOut}
           >
             <LogOut className="w-4 h-4 mr-2" />
             Log out
