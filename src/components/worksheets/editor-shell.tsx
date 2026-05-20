@@ -81,6 +81,10 @@ export const EditorShell = ({
   const [showThemeSidebar, setShowThemeSidebar] = useState(true);
   const [showWorksheetSidebar, setShowWorksheetSidebar] = useState(true);
   const [showAnswerKey, setShowAnswerKey] = useState(false);
+  const [showScoring, setShowScoring] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.localStorage.getItem('edusheet-editor-show-scoring') !== '0';
+  });
   const [leftTab, setLeftTab] = useState<'structure' | 'components'>(
     'structure',
   );
@@ -146,6 +150,17 @@ export const EditorShell = ({
   useEffect(() => {
     showAnswerKeyRef.current = showAnswerKey;
   }, [showAnswerKey]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        'edusheet-editor-show-scoring',
+        showScoring ? '1' : '0',
+      );
+    } catch {
+      /* ignore quota / private mode */
+    }
+  }, [showScoring]);
 
   const toSnapshot = useCallback((): EditorSnapshot => {
     return {
@@ -352,6 +367,7 @@ export const EditorShell = ({
       setIsDirty: (next) => setIsDirty(next),
       validateContentForSave,
       showAnswerKey,
+      showScoring,
     });
 
   const { focusNode } = useEditorLifecycle({
@@ -415,6 +431,7 @@ export const EditorShell = ({
     isPaletteDragging,
     isBlankWorksheet,
     completion,
+    showScoring,
   };
 
   const editPaneCommands = {
@@ -440,6 +457,8 @@ export const EditorShell = ({
       <EditorToolbar
         title={content.title}
         pointsTotal={pointsTotal}
+        showScoring={showScoring}
+        setShowScoring={setShowScoring}
         mode={mode}
         setMode={setMode}
         showAnswerKey={showAnswerKey}
@@ -507,6 +526,7 @@ export const EditorShell = ({
                 pointsBySection={pointsBySection}
                 pointsTotal={pointsTotal}
                 showAnswerKey={showAnswerKey}
+                showScoring={showScoring}
               />
             ) : (
               <EditorEditPane

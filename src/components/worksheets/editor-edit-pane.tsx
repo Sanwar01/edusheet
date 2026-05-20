@@ -48,6 +48,7 @@ type EditPaneModel = {
   isPaletteDragging: boolean;
   isBlankWorksheet: boolean;
   completion: CompletionState;
+  showScoring: boolean;
 };
 
 type EditPaneCommands = {
@@ -336,6 +337,7 @@ export function EditorEditPane({
                         onAddQuestion={() =>
                           commands.addQuestionToSection(section.id)
                         }
+                        showScoring={model.showScoring}
                       />
                     </div>
                   );

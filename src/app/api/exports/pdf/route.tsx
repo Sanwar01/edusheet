@@ -144,12 +144,14 @@ function buildPrintableHtml({
   layout,
   worksheetId,
   includeAnswerKey,
+  includeScoring,
 }: {
   content: WorksheetContent;
   theme: WorksheetTheme;
   layout: WorksheetLayout;
   worksheetId: string;
   includeAnswerKey: boolean;
+  includeScoring: boolean;
 }) {
   const spacing = spacingPx(theme.spacingPreset);
   const safeTitle = escapeHtml(content.title || worksheetId);
@@ -209,7 +211,11 @@ function buildPrintableHtml({
             : `<div class="section-stack">${questionsHtml}</div>`;
 
       return `
-        <h2 style="color:${theme.textColor}">Section ${sectionIndex + 1}: ${safeHeading || 'Untitled section'} <span class="section-points" style="color:${theme.answerTextColor}">(${sectionPoints} pts)</span></h2>
+        <h2 style="color:${theme.textColor}">Section ${sectionIndex + 1}: ${safeHeading || 'Untitled section'}${
+          includeScoring
+            ? ` <span class="section-points" style="color:${theme.answerTextColor}">(${sectionPoints} pts)</span>`
+            : ''
+        }</h2>
         ${gridWrapper}
       `;
     })
@@ -269,7 +275,11 @@ function buildPrintableHtml({
     ${headerBlock}
     ${safeInstructions ? `<p class="instructions">${safeInstructions}</p>` : ''}
     <div class="meta">
-      <span>Total points: <strong>${totalPoints}</strong></span>
+      ${
+        includeScoring
+          ? `<span>Total points: <strong>${totalPoints}</strong></span>`
+          : ''
+      }
       <span>Answer key: <strong>${includeAnswerKey ? 'Included' : 'Hidden'}</strong></span>
     </div>
     ${sectionsHtml}
@@ -281,10 +291,12 @@ async function buildPdfResponse({
   requestName,
   worksheetId,
   includeAnswerKey,
+  includeScoring,
 }: {
   requestName: string;
   worksheetId?: string;
   includeAnswerKey: boolean;
+  includeScoring: boolean;
 }) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -349,6 +361,7 @@ async function buildPdfResponse({
       layout,
       worksheetId,
       includeAnswerKey,
+      includeScoring,
     });
   } catch (e) {
     return handleUnknownError(`${requestName} /api/exports/pdf (render html)`, e);
@@ -387,11 +400,13 @@ export async function POST(req: Request) {
     const payload = (await req.json()) as {
       worksheetId?: string;
       includeAnswerKey?: boolean;
+      includeScoring?: boolean;
     };
     return buildPdfResponse({
       requestName: 'POST',
       worksheetId: payload.worksheetId,
       includeAnswerKey: Boolean(payload.includeAnswerKey),
+      includeScoring: payload.includeScoring !== false,
     });
   });
 }
@@ -401,6 +416,12 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const worksheetId = searchParams.get('worksheetId') ?? undefined;
     const includeAnswerKey = searchParams.get('includeAnswerKey') === '1';
-    return buildPdfResponse({ requestName: 'GET', worksheetId, includeAnswerKey });
+    const includeScoring = searchParams.get('includeScoring') !== '0';
+    return buildPdfResponse({
+      requestName: 'GET',
+      worksheetId,
+      includeAnswerKey,
+      includeScoring,
+    });
   });
 }

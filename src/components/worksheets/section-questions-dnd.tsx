@@ -109,6 +109,7 @@ export const SectionQuestionsDnd = ({
   onDropPaletteItem,
   showDropTargets,
   sectionLayout = defaultSectionLayout(),
+  showScoring = true,
 }: {
   section: WorksheetContent['sections'][number];
   onChangeQuestions: (next: WorksheetQuestion[]) => void;
@@ -116,6 +117,7 @@ export const SectionQuestionsDnd = ({
   onDropPaletteItem: (type: PaletteItemType, insertIndex?: number) => void;
   showDropTargets: boolean;
   sectionLayout?: SectionLayoutConfig;
+  showScoring?: boolean;
 }) => {
   const [collapsedByQuestionId, setCollapsedByQuestionId] = useState<
     Record<string, boolean>
@@ -302,6 +304,7 @@ export const SectionQuestionsDnd = ({
                             ))}
                           </SelectContent>
                         </Select>
+                        {showScoring ? (
                         <div className="flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
                           <span>Pts</span>
                           <input
@@ -328,6 +331,7 @@ export const SectionQuestionsDnd = ({
                             className="h-5 w-12 rounded border border-slate-300 bg-white px-1 text-right text-xs outline-none"
                           />
                         </div>
+                        ) : null}
                       </div>
                     </div>
 
@@ -351,9 +355,11 @@ export const SectionQuestionsDnd = ({
                         <span className="rounded-full bg-white px-2 py-1">
                           Type: {questionTypeLabelMap[question.question_type]}
                         </span>
+                        {showScoring ? (
                         <span className="rounded-full bg-white px-2 py-1">
                           Points: {question.points ?? 1}
                         </span>
+                        ) : null}
                         <span className="rounded-full bg-white px-2 py-1">
                           Answer: {question.answer?.trim() ? 'Set' : 'Not set'}
                         </span>

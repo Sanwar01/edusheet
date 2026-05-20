@@ -20,6 +20,7 @@ export function useWorksheetPersistence({
   setIsDirty,
   validateContentForSave,
   showAnswerKey,
+  showScoring,
 }: {
   content: WorksheetContent;
   theme: WorksheetTheme;
@@ -30,6 +31,7 @@ export function useWorksheetPersistence({
   setIsDirty: (isDirty: boolean) => void;
   validateContentForSave: () => string | null;
   showAnswerKey: boolean;
+  showScoring: boolean;
 }) {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
@@ -182,6 +184,7 @@ export function useWorksheetPersistence({
         body: JSON.stringify({
           worksheetId: resolvedWorksheetId,
           includeAnswerKey: showAnswerKey,
+          includeScoring: showScoring,
         }),
       });
       if (!res.ok) {
@@ -213,6 +216,7 @@ export function useWorksheetPersistence({
     isExporting,
     resolvedWorksheetId,
     showAnswerKey,
+    showScoring,
     validateContentForSave,
   ]);
 

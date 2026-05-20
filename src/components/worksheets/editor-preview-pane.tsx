@@ -18,6 +18,7 @@ export function EditorPreviewPane({
   pointsBySection,
   pointsTotal,
   showAnswerKey,
+  showScoring,
 }: {
   content: WorksheetContent;
   theme: WorksheetTheme;
@@ -28,6 +29,7 @@ export function EditorPreviewPane({
   pointsBySection: Record<string, number>;
   pointsTotal: number;
   showAnswerKey: boolean;
+  showScoring: boolean;
 }) {
   return (
     <div
@@ -74,9 +76,11 @@ export function EditorPreviewPane({
           {content.instructions}
         </p>
       ) : null}
-      <div className="mb-4 flex items-center justify-between rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
         <span>Preview is read-only and mirrors export layout.</span>
-        <span className="font-medium">Total points: {pointsTotal}</span>
+        {showScoring ? (
+          <span className="font-medium">Total points: {pointsTotal}</span>
+        ) : null}
       </div>
       <div className={sectionSpacingClass}>
         {content.sections.map((section, sectionIndex) => {
@@ -95,10 +99,15 @@ export function EditorPreviewPane({
             <section key={section.id} className={questionSpacingClass}>
               <h2 className="font-semibold" style={{ color: theme.textColor }}>
                 Section {sectionIndex + 1}:{' '}
-                {section.heading || 'Untitled section'}{' '}
-                <span style={{ color: theme.answerTextColor }}>
-                  ({pointsBySection[section.id] ?? 0} pts)
-                </span>
+                {section.heading || 'Untitled section'}
+                {showScoring ? (
+                  <>
+                    {' '}
+                    <span style={{ color: theme.answerTextColor }}>
+                      ({pointsBySection[section.id] ?? 0} pts)
+                    </span>
+                  </>
+                ) : null}
               </h2>
               <div
                 className={cn(

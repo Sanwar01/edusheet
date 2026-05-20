@@ -36,6 +36,7 @@ export const WorksheetSectionCard = ({
   showDropTargets,
   sectionLayout,
   onSectionLayoutChange,
+  showScoring,
 }: {
   section: WorksheetContent['sections'][number];
   sectionNumber: number;
@@ -51,6 +52,7 @@ export const WorksheetSectionCard = ({
   showDropTargets: boolean;
   sectionLayout: SectionLayoutConfig;
   onSectionLayoutChange: (partial: Partial<SectionLayoutConfig>) => void;
+  showScoring: boolean;
 }) => {
   return (
     <SortableSectionShell
@@ -62,9 +64,11 @@ export const WorksheetSectionCard = ({
           Section {sectionNumber}
         </p>
         <div className="flex items-center gap-1">
-          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">
-            {sectionPoints} pts
-          </span>
+          {showScoring ? (
+            <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">
+              {sectionPoints} pts
+            </span>
+          ) : null}
           <Button
             variant="ghost"
             className="h-8 px-2 text-xs text-slate-600"
@@ -184,6 +188,7 @@ export const WorksheetSectionCard = ({
             onDropPaletteItem={onDropPaletteItem}
             showDropTargets={showDropTargets}
             sectionLayout={sectionLayout}
+            showScoring={showScoring}
             onChangeQuestions={(next) =>
               onChangeSection({ ...section, questions: next })
             }

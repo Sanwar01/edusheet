@@ -6,6 +6,7 @@ import {
   Eye,
   FileEdit,
   FileDown,
+  ListChecks,
   Loader2,
   Redo2,
   Save,
@@ -17,6 +18,8 @@ import { Button } from '../ui/button';
 interface EditorToolbarProps {
   title: string;
   pointsTotal: number;
+  showScoring: boolean;
+  setShowScoring: (next: boolean) => void;
   mode: 'edit' | 'preview';
   setMode: (mode: 'edit' | 'preview') => void;
   showAnswerKey: boolean;
@@ -35,6 +38,8 @@ interface EditorToolbarProps {
 export const EditorToolbar = ({
   title,
   pointsTotal,
+  showScoring,
+  setShowScoring,
   mode,
   setMode,
   showAnswerKey,
@@ -68,12 +73,14 @@ export const EditorToolbar = ({
             </p>
           </div>
           <div className="hidden items-center gap-2 rounded-md border border-border bg-secondary/50 px-2 py-1 md:flex">
-            <div className="rounded-full border border-border bg-secondary px-2.5 py-1 text-xs text-muted-foreground">
-              Total points:{' '}
-              <span className="font-semibold text-foreground">
-                {pointsTotal}
-              </span>
-            </div>
+            {showScoring ? (
+              <div className="rounded-full border border-border bg-secondary px-2.5 py-1 text-xs text-muted-foreground">
+                Total points:{' '}
+                <span className="font-semibold text-foreground">
+                  {pointsTotal}
+                </span>
+              </div>
+            ) : null}
             <div className="flex items-center gap-1 rounded-full border border-border bg-secondary px-2.5 py-1 text-xs text-muted-foreground">
               {isSaving ? (
                 <>
@@ -107,6 +114,23 @@ export const EditorToolbar = ({
         </div>
 
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 rounded-md border border-border bg-background p-1">
+            <Button
+              type="button"
+              variant={showScoring ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setShowScoring(!showScoring)}
+              className="h-7 gap-1 px-2 text-xs"
+              title={
+                showScoring
+                  ? 'Hide points in editor, preview, and PDF export'
+                  : 'Show points in editor, preview, and PDF export'
+              }
+            >
+              <ListChecks className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Scoring</span>
+            </Button>
+          </div>
           <div className="hidden items-center gap-1 rounded-md border border-border bg-background p-1 md:flex">
             <Button
               variant={mode === 'edit' ? 'default' : 'ghost'}
