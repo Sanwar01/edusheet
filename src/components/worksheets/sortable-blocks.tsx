@@ -3,16 +3,30 @@
 import type { ReactNode } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { EditorNodeToolbar } from '@/components/worksheets/editor-node-toolbar';
+import { cn } from '@/lib/utils';
+
+type SortableShellProps = {
+  id: string;
+  children: ReactNode;
+  sortData?: Record<string, unknown>;
+  shellClassName?: string;
+  editorNodeId?: string;
+  isSelected?: boolean;
+  onDuplicate?: () => void;
+  onDelete?: () => void;
+};
 
 export const SortableSectionShell = ({
   id,
   children,
   sortData,
-}: {
-  id: string;
-  children: ReactNode;
-  sortData?: Record<string, unknown>;
-}) => {
+  shellClassName,
+  editorNodeId,
+  isSelected,
+  onDuplicate,
+  onDelete,
+}: SortableShellProps) => {
   const {
     attributes,
     listeners,
@@ -32,20 +46,23 @@ export const SortableSectionShell = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="rounded-md border border-slate-200 bg-white p-3 shadow-sm"
+      id={editorNodeId}
+      data-editor-node={editorNodeId}
+      className={cn(
+        'relative rounded-md border bg-white p-3 shadow-sm',
+        isSelected ? 'border-2 border-primary' : 'border-slate-200',
+        shellClassName,
+      )}
     >
-      <div className="flex gap-2">
-        <button
-          type="button"
-          className="h-9 shrink-0 cursor-grab rounded border border-slate-200 bg-slate-50 px-2 text-slate-600 active:cursor-grabbing"
-          aria-label="Drag section"
-          {...attributes}
-          {...listeners}
-        >
-          ⋮⋮
-        </button>
-        <div className="min-w-0 flex-1 space-y-2">{children}</div>
-      </div>
+      {isSelected ? (
+        <EditorNodeToolbar
+          dragAttributes={attributes}
+          dragListeners={listeners}
+          onDuplicate={onDuplicate}
+          onDelete={onDelete}
+        />
+      ) : null}
+      <div className="min-w-0 space-y-2">{children}</div>
     </div>
   );
 };
@@ -54,11 +71,12 @@ export const SortableQuestionShell = ({
   id,
   children,
   sortData,
-}: {
-  id: string;
-  children: ReactNode;
-  sortData?: Record<string, unknown>;
-}) => {
+  shellClassName,
+  editorNodeId,
+  isSelected,
+  onDuplicate,
+  onDelete,
+}: SortableShellProps) => {
   const {
     attributes,
     listeners,
@@ -78,20 +96,23 @@ export const SortableQuestionShell = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="max-w-full rounded border border-slate-100 bg-slate-50/60 p-2"
+      id={editorNodeId}
+      data-editor-node={editorNodeId}
+      className={cn(
+        'relative max-w-full rounded-md border bg-slate-50/60 p-2',
+        isSelected ? 'border-2 border-primary' : 'border-slate-100',
+        shellClassName,
+      )}
     >
-      <div className="flex min-w-0 gap-2">
-        <button
-          type="button"
-          className="mt-1 h-8 shrink-0 cursor-grab rounded border border-slate-200 bg-white px-1.5 text-xs text-slate-600 active:cursor-grabbing"
-          aria-label="Drag question"
-          {...attributes}
-          {...listeners}
-        >
-          ⋮
-        </button>
-        <div className="min-w-0 flex-1">{children}</div>
-      </div>
+      {isSelected ? (
+        <EditorNodeToolbar
+          dragAttributes={attributes}
+          dragListeners={listeners}
+          onDuplicate={onDuplicate}
+          onDelete={onDelete}
+        />
+      ) : null}
+      <div className="min-w-0">{children}</div>
     </div>
   );
 };

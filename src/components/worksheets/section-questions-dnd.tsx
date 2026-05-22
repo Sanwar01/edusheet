@@ -15,7 +15,6 @@ import {
   rectSortingStrategy,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { ChevronDown, ChevronRight, Copy, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -123,6 +122,8 @@ export const SectionQuestionsDnd = ({
   showDropTargets,
   sectionLayout = defaultSectionLayout(),
   showScoring = true,
+  selectedNodeId,
+  onSelectNode,
 }: {
   section: WorksheetContent['sections'][number];
   onChangeQuestions: (next: WorksheetSectionItem[]) => void;
@@ -131,6 +132,8 @@ export const SectionQuestionsDnd = ({
   showDropTargets: boolean;
   sectionLayout?: SectionLayoutConfig;
   showScoring?: boolean;
+  selectedNodeId: string | null;
+  onSelectNode: (nodeId: string) => void;
 }) => {
   const [collapsedByQuestionId, setCollapsedByQuestionId] = useState<
     Record<string, boolean>
@@ -244,6 +247,20 @@ export const SectionQuestionsDnd = ({
                       ) : null}
                       <SortableQuestionShell
                         id={item.id}
+                        editorNodeId={`block_${item.id}`}
+                        isSelected={selectedNodeId === `block_${item.id}`}
+                        onDuplicate={() =>
+                          onChangeQuestions([
+                            ...section.questions.slice(0, index + 1),
+                            { ...item, id: crypto.randomUUID() },
+                            ...section.questions.slice(index + 1),
+                          ])
+                        }
+                        onDelete={() =>
+                          onChangeQuestions(
+                            section.questions.filter((_, i) => i !== index),
+                          )
+                        }
                         sortData={{
                           kind: 'structure_block',
                           blockId: item.id,
@@ -251,7 +268,21 @@ export const SectionQuestionsDnd = ({
                           index,
                         }}
                       >
-                        <div id={`block_${item.id}`}>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectNode(`block_${item.id}`);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              onSelectNode(`block_${item.id}`);
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                        >
                           <StructureBlockEditor
                             block={item}
                             onChange={(next) =>
@@ -259,11 +290,6 @@ export const SectionQuestionsDnd = ({
                                 section.questions.map((row, i) =>
                                   i === index ? next : row,
                                 ),
-                              )
-                            }
-                            onDelete={() =>
-                              onChangeQuestions(
-                                section.questions.filter((_, i) => i !== index),
                               )
                             }
                           />
@@ -303,6 +329,19 @@ export const SectionQuestionsDnd = ({
                   ) : null}
                   <SortableQuestionShell
                     id={question.id}
+                    editorNodeId={`question_${question.id}`}
+                    isSelected={selectedNodeId === `question_${question.id}`}
+                    onDuplicate={() =>
+                      onChangeQuestions([
+                        ...section.questions,
+                        duplicateQuestion(question),
+                      ])
+                    }
+                    onDelete={() =>
+                      onChangeQuestions(
+                        section.questions.filter((q) => q.id !== question.id),
+                      )
+                    }
                     sortData={{
                       kind: 'question',
                       questionId: question.id,
@@ -312,11 +351,23 @@ export const SectionQuestionsDnd = ({
                   >
                     <div
                       className={cn(
-                        'mb-1 min-w-0',
+                        'mb-1 min-w-0 cursor-pointer rounded-md',
                         isGrid
                           ? 'flex flex-col gap-2'
                           : 'flex flex-row items-center justify-between gap-2',
                       )}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectNode(`question_${question.id}`);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          onSelectNode(`question_${question.id}`);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
                     >
                       <p
                         className={cn(
@@ -333,29 +384,6 @@ export const SectionQuestionsDnd = ({
                           isGrid && 'w-full',
                         )}
                       >
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="h-7 shrink-0 px-2 text-xs text-slate-600"
-                          onClick={() =>
-                            setCollapsedByQuestionId((prev) => ({
-                              ...prev,
-                              [question.id]: !prev[question.id],
-                            }))
-                          }
-                        >
-                          {collapsedByQuestionId[question.id] ? (
-                            <>
-                              <ChevronRight className="h-3.5 w-3.5" /> Show
-                              question
-                            </>
-                          ) : (
-                            <>
-                              <ChevronDown className="h-3.5 w-3.5" /> Hide
-                              question
-                            </>
-                          )}
-                        </Button>
                         <Select
                           value={question.question_type}
                           onValueChange={(nextType) =>
@@ -423,7 +451,6 @@ export const SectionQuestionsDnd = ({
                     </div>
 
                     <Textarea
-                      id={`question_${question.id}`}
                       value={question.prompt}
                       placeholder="Type the question prompt here"
                       className="w-full border-slate-200 bg-white font-semibold rounded-md p-2"
@@ -650,37 +677,6 @@ export const SectionQuestionsDnd = ({
                             />
                           </div>
                         )}
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          <Button
-                            variant="ghost"
-                            className="h-8 px-2 text-xs text-slate-600"
-                            onClick={() =>
-                              onChangeQuestions([
-                                ...section.questions,
-                                duplicateQuestion(question),
-                              ])
-                            }
-                          >
-                            <Copy className="h-3.5 w-3.5" /> Duplicate
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            className="h-8 px-2 text-xs text-rose-600 hover:text-rose-700"
-                            onClick={() => {
-                              const confirmed = window.confirm(
-                                'Delete this question? This cannot be undone.',
-                              );
-                              if (!confirmed) return;
-                              onChangeQuestions(
-                                section.questions.filter(
-                                  (q) => q.id !== question.id,
-                                ),
-                              );
-                            }}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" /> Delete
-                          </Button>
-                        </div>
                       </>
                     )}
                   </SortableQuestionShell>

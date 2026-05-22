@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  ChevronDown,
-  ChevronRight,
-  CirclePlus,
-  Copy,
-  Trash2,
-} from 'lucide-react';
+import { CirclePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -27,7 +21,6 @@ export const WorksheetSectionCard = ({
   questionStartNumber,
   sectionPoints,
   isCollapsed,
-  onToggleCollapsed,
   onChangeSection,
   onDuplicateSection,
   onDeleteSection,
@@ -37,13 +30,14 @@ export const WorksheetSectionCard = ({
   sectionLayout,
   onSectionLayoutChange,
   showScoring,
+  selectedNodeId,
+  onSelectNode,
 }: {
   section: WorksheetContent['sections'][number];
   sectionNumber: number;
   questionStartNumber: number;
   sectionPoints: number;
   isCollapsed: boolean;
-  onToggleCollapsed: () => void;
   onChangeSection: (next: WorksheetContent['sections'][number]) => void;
   onDuplicateSection: () => void;
   onDeleteSection: () => void;
@@ -53,69 +47,61 @@ export const WorksheetSectionCard = ({
   sectionLayout: SectionLayoutConfig;
   onSectionLayoutChange: (partial: Partial<SectionLayoutConfig>) => void;
   showScoring: boolean;
+  selectedNodeId: string | null;
+  onSelectNode: (nodeId: string) => void;
 }) => {
+  const sectionNodeId = `section_${section.id}`;
+  const isSectionSelected = selectedNodeId === sectionNodeId;
+
   return (
     <SortableSectionShell
       id={section.id}
       sortData={{ kind: 'section', sectionId: section.id }}
+      isSelected={isSectionSelected}
+      onDuplicate={onDuplicateSection}
+      onDelete={onDeleteSection}
     >
-      <div className="mb-1 flex items-center justify-between gap-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-          Section {sectionNumber}
-        </p>
-        <div className="flex items-center gap-1">
+      <div
+        id={sectionNodeId}
+        data-editor-node={sectionNodeId}
+        className="space-y-2"
+        onClick={() => onSelectNode(sectionNodeId)}
+      >
+        <div
+          className="mb-1 flex items-center justify-between gap-2 rounded-md"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onSelectNode(sectionNodeId);
+            }
+          }}
+          role="button"
+          tabIndex={0}
+        >
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            Section {sectionNumber}
+          </p>
           {showScoring ? (
             <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">
               {sectionPoints} pts
             </span>
           ) : null}
-          <Button
-            variant="ghost"
-            className="h-8 px-2 text-xs text-slate-600"
-            onClick={onToggleCollapsed}
-          >
-            {isCollapsed ? (
-              <>
-                <ChevronRight className="h-3.5 w-3.5" /> Show section
-              </>
-            ) : (
-              <>
-                <ChevronDown className="h-3.5 w-3.5" /> Hide section
-              </>
-            )}
-          </Button>
-          <Button
-            variant="ghost"
-            className="h-8 px-2 text-xs text-slate-600"
-            onClick={onDuplicateSection}
-          >
-            <Copy className="h-3.5 w-3.5" /> Duplicate
-          </Button>
-          <Button
-            variant="ghost"
-            className="h-8 px-2 text-xs text-rose-600 hover:text-rose-700"
-            onClick={onDeleteSection}
-          >
-            <Trash2 className="h-3.5 w-3.5" /> Delete
-          </Button>
         </div>
-      </div>
 
-      <Input
-        id={`section_${section.id}`}
-        className="w-full border-slate-300 bg-white font-medium"
-        value={section.heading}
-        placeholder="Section heading"
-        onChange={(e) =>
-          onChangeSection({
-            ...section,
-            heading: e.target.value,
-          })
-        }
-      />
+        <Input
+          className="w-full border-slate-300 bg-white font-medium"
+          value={section.heading}
+          placeholder="Section heading"
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) =>
+            onChangeSection({
+              ...section,
+              heading: e.target.value,
+            })
+          }
+        />
 
-      {!isCollapsed && (
-        <>
+        {!isCollapsed ? (
           <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-slate-100 bg-slate-50/80 px-2 py-2">
             <span className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
               Question layout
@@ -181,7 +167,11 @@ export const WorksheetSectionCard = ({
               </>
             ) : null}
           </div>
+        ) : null}
+      </div>
 
+      {!isCollapsed ? (
+        <>
           <SectionQuestionsDnd
             section={section}
             questionStartNumber={questionStartNumber}
@@ -189,6 +179,8 @@ export const WorksheetSectionCard = ({
             showDropTargets={showDropTargets}
             sectionLayout={sectionLayout}
             showScoring={showScoring}
+            selectedNodeId={selectedNodeId}
+            onSelectNode={onSelectNode}
             onChangeQuestions={(next) =>
               onChangeSection({ ...section, questions: next })
             }
@@ -202,7 +194,7 @@ export const WorksheetSectionCard = ({
             <CirclePlus className="h-3.5 w-3.5" /> Add question
           </Button>
         </>
-      )}
+      ) : null}
     </SortableSectionShell>
   );
 };

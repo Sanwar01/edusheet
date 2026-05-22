@@ -50,6 +50,8 @@ type EditPaneModel = {
   isBlankWorksheet: boolean;
   completion: CompletionState;
   showScoring: boolean;
+  selectedNodeId: string | null;
+  onSelectNode: (nodeId: string) => void;
 };
 
 type EditPaneCommands = {
@@ -169,6 +171,7 @@ export function EditorEditPane({
           <div className="mb-4 flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 pb-4">
             <input
               id="worksheet_title"
+              data-editor-node="worksheet_title"
               value={model.content.title}
               onChange={(e) => {
                 commands.setContentWithHistory((prev) => ({
@@ -196,6 +199,7 @@ export function EditorEditPane({
         ) : (
           <input
             id="worksheet_title"
+            data-editor-node="worksheet_title"
             value={model.content.title}
             onChange={(e) => {
               commands.setContentWithHistory((prev) => ({
@@ -214,6 +218,7 @@ export function EditorEditPane({
 
         <textarea
           id="worksheet_instructions"
+          data-editor-node="worksheet_instructions"
           value={model.content.instructions || ''}
           onChange={(e) => {
             commands.setContentWithHistory((prev) => ({
@@ -308,12 +313,6 @@ export function EditorEditPane({
                         isCollapsed={Boolean(
                           model.sectionCollapsed[section.id],
                         )}
-                        onToggleCollapsed={() =>
-                          commands.setSectionCollapsed((prev) => ({
-                            ...prev,
-                            [section.id]: !prev[section.id],
-                          }))
-                        }
                         onChangeSection={(nextSection) =>
                           commands.updateSectionById(
                             section.id,
@@ -345,6 +344,8 @@ export function EditorEditPane({
                           commands.addQuestionToSection(section.id)
                         }
                         showScoring={model.showScoring}
+                        selectedNodeId={model.selectedNodeId}
+                        onSelectNode={model.onSelectNode}
                       />
                     </div>
                   );

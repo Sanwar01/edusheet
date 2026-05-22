@@ -1,7 +1,5 @@
 'use client';
 
-import { Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -17,43 +15,27 @@ import type { WorksheetStructureBlock } from '@/types/worksheet';
 export function StructureBlockEditor({
   block,
   onChange,
-  onDelete,
 }: {
   block: WorksheetStructureBlock;
   onChange: (next: WorksheetStructureBlock) => void;
-  onDelete: () => void;
 }) {
   const baseId = `block_${block.id}`;
 
   return (
-    <div className="space-y-2 rounded-md border border-slate-200 bg-white p-2">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
-          {block.block_type === 'heading'
-            ? 'Heading'
-            : block.block_type === 'paragraph'
-              ? 'Paragraph'
-              : block.block_type === 'divider'
-                ? 'Divider'
-                : block.block_type === 'spacer'
-                  ? 'Spacer'
-                  : block.block_type === 'callout'
-                    ? 'Callout'
-                    : 'Image'}
-        </span>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 text-xs text-rose-600 hover:text-rose-700"
-          onClick={() => {
-            if (!window.confirm('Remove this block?')) return;
-            onDelete();
-          }}
-        >
-          <Trash2 className="h-3.5 w-3.5" /> Remove
-        </Button>
-      </div>
+    <div className="space-y-2">
+      <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+        {block.block_type === 'heading'
+          ? 'Heading'
+          : block.block_type === 'paragraph'
+            ? 'Paragraph'
+            : block.block_type === 'divider'
+              ? 'Divider'
+              : block.block_type === 'spacer'
+                ? 'Spacer'
+                : block.block_type === 'callout'
+                  ? 'Callout'
+                  : 'Image'}
+      </span>
 
       {block.block_type === 'heading' ? (
         <div className="flex flex-wrap items-end gap-2">

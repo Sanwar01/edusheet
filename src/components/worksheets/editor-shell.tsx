@@ -1,6 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+} from 'react';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { PanelLeftOpen, PanelRightOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -377,6 +384,49 @@ export const EditorShell = ({
     isSaving,
   });
 
+  const handleEditCanvasMouseDown = useCallback(
+    (event: MouseEvent) => {
+      if (!selectedNodeId) return;
+      const target = event.target as HTMLElement;
+      if (target.closest(`[data-editor-node="${selectedNodeId}"]`)) return;
+      setSelectedNodeId(null);
+    },
+    [selectedNodeId],
+  );
+
+  const selectNode = useCallback(
+    (nodeId: string) => {
+      if (nodeId.startsWith('section_')) {
+        const sectionId = nodeId.replace('section_', '');
+        setSectionCollapsed((prev) => ({ ...prev, [sectionId]: false }));
+      }
+      if (nodeId.startsWith('block_')) {
+        const blockId = nodeId.replace('block_', '');
+        const sec = content.sections.find((s) =>
+          s.questions.some(
+            (row) => row.id === blockId && !isWorksheetQuestion(row),
+          ),
+        );
+        if (sec) {
+          setSectionCollapsed((prev) => ({ ...prev, [sec.id]: false }));
+        }
+      }
+      if (nodeId.startsWith('question_')) {
+        const questionId = nodeId.replace('question_', '');
+        const sec = content.sections.find((s) =>
+          s.questions.some(
+            (row) => row.id === questionId && isWorksheetQuestion(row),
+          ),
+        );
+        if (sec) {
+          setSectionCollapsed((prev) => ({ ...prev, [sec.id]: false }));
+        }
+      }
+      focusNode(nodeId, setSelectedNodeId);
+    },
+    [content.sections, focusNode],
+  );
+
   const duplicateSection = useCallback(
     (sectionId: string) => {
       recordHistory();
@@ -403,10 +453,6 @@ export const EditorShell = ({
 
   const deleteSection = useCallback(
     (sectionId: string) => {
-      const confirmed = window.confirm(
-        'Delete this section and all of its questions? This cannot be undone.',
-      );
-      if (!confirmed) return;
       recordHistory();
       setContent((prev) => deleteSectionAction(prev, sectionId));
       setSectionCollapsed((prev) => {
@@ -431,6 +477,8 @@ export const EditorShell = ({
     isBlankWorksheet,
     completion,
     showScoring,
+    selectedNodeId,
+    onSelectNode: selectNode,
   };
 
   const editPaneCommands = {
@@ -481,30 +529,7 @@ export const EditorShell = ({
               setTab={setLeftTab}
               content={content}
               selectedNodeId={selectedNodeId}
-              onSelectNode={(nodeId) => {
-                if (nodeId.startsWith('section_')) {
-                  const sectionId = nodeId.replace('section_', '');
-                  setSectionCollapsed((prev) => ({
-                    ...prev,
-                    [sectionId]: false,
-                  }));
-                }
-                if (nodeId.startsWith('block_')) {
-                  const blockId = nodeId.replace('block_', '');
-                  const sec = content.sections.find((s) =>
-                    s.questions.some(
-                      (row) => row.id === blockId && !isWorksheetQuestion(row),
-                    ),
-                  );
-                  if (sec) {
-                    setSectionCollapsed((prev) => ({
-                      ...prev,
-                      [sec.id]: false,
-                    }));
-                  }
-                }
-                focusNode(nodeId, setSelectedNodeId);
-              }}
+              onSelectNode={selectNode}
               onAddFromPalette={addFromPalette}
               onPaletteDragStateChange={setIsPaletteDragging}
               onClose={() => setShowWorksheetSidebar(false)}
@@ -526,6 +551,7 @@ export const EditorShell = ({
           className={`flex-1 overflow-auto p-4 transition-[padding] duration-200 md:p-8 ${
             showWorksheetSidebar ? 'lg:pl-76' : ''
           } ${showThemeSidebar ? 'lg:pr-76' : ''}`}
+          onMouseDown={mode === 'edit' ? handleEditCanvasMouseDown : undefined}
         >
           <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 lg:flex-row lg:items-start">
             {mode === 'preview' ? (
