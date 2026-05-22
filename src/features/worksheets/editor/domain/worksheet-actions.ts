@@ -3,8 +3,12 @@ import type {
   QuestionType,
   WorksheetContent,
   WorksheetSection,
+  WorksheetSectionItem,
+  WorksheetStructureBlock,
 } from '@/types/worksheet';
-import type { PaletteItemType } from '@/components/worksheets/editor-dnd-types';
+import { isWorksheetQuestion } from '@/types/worksheet';
+import type { PaletteItemType, StructurePaletteType } from '@/components/worksheets/editor-dnd-types';
+import { isStructurePaletteType } from '@/components/worksheets/editor-dnd-types';
 
 function clampIndex(index: number, length: number): number {
   return Math.max(0, Math.min(index, length));
@@ -40,6 +44,31 @@ export function buildQuestionTemplate(questionType: QuestionType) {
     };
   }
   return base;
+}
+
+export function buildStructureBlock(
+  kind: StructurePaletteType,
+): WorksheetStructureBlock {
+  const id = newId('blk');
+  switch (kind) {
+    case 'heading':
+      return { id, block_type: 'heading', text: 'Heading', level: 3 };
+    case 'paragraph':
+      return { id, block_type: 'paragraph', text: 'Add paragraph text…' };
+    case 'divider':
+      return { id, block_type: 'divider' };
+    case 'spacer':
+      return { id, block_type: 'spacer', heightPx: 24 };
+    case 'callout':
+      return {
+        id,
+        block_type: 'callout',
+        text: 'Callout message',
+        tone: 'info',
+      };
+    case 'image':
+      return { id, block_type: 'image', src: '', alt: '' };
+  }
 }
 
 export function updateSection(
@@ -134,13 +163,16 @@ export function addQuestionFromPaletteToSection(
 ): WorksheetContent {
   if (type === 'section') return content;
   return updateSection(content, sectionId, (section) => {
-    const nextQuestions = [...section.questions];
+    const items = [...section.questions];
     const clamped =
       typeof insertIndex === 'number'
-        ? clampIndex(insertIndex, nextQuestions.length)
-        : nextQuestions.length;
-    nextQuestions.splice(clamped, 0, buildQuestionTemplate(type));
-    return { ...section, questions: nextQuestions };
+        ? clampIndex(insertIndex, items.length)
+        : items.length;
+    const toInsert: WorksheetSectionItem = isStructurePaletteType(type)
+      ? buildStructureBlock(type)
+      : buildQuestionTemplate(type);
+    items.splice(clamped, 0, toInsert);
+    return { ...section, questions: items };
   });
 }
 
@@ -156,6 +188,9 @@ export function addFromPalette(
   const firstSection = content.sections[0];
   if (!firstSection) {
     const newSectionId = newId('sec');
+    const seed: WorksheetSectionItem = isStructurePaletteType(type)
+      ? buildStructureBlock(type)
+      : buildQuestionTemplate(type);
     return {
       content: {
         ...content,
@@ -165,7 +200,7 @@ export function addFromPalette(
             id: newSectionId,
             type: 'section',
             heading: 'Section 1',
-            questions: [buildQuestionTemplate(type)],
+            questions: [seed],
           },
         ],
       },
@@ -176,7 +211,12 @@ export function addFromPalette(
   return {
     content: updateSection(content, firstSection.id, (section) => ({
       ...section,
-      questions: [...section.questions, buildQuestionTemplate(type)],
+      questions: [
+        ...section.questions,
+        isStructurePaletteType(type)
+          ? buildStructureBlock(type)
+          : buildQuestionTemplate(type),
+      ],
     })),
     openedSectionId: firstSection.id,
   };
@@ -197,7 +237,11 @@ export function duplicateSection(
         {
           ...section,
           id: newSectionId,
-          questions: section.questions.map((q) => ({ ...q, id: newId('q') })),
+          questions: section.questions.map((item) =>
+            isWorksheetQuestion(item)
+              ? { ...item, id: newId('q') }
+              : { ...item, id: newId('blk') },
+          ),
         },
       ],
     },

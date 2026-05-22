@@ -36,9 +36,10 @@ function ThemePanelGroup({
 
   return (
     <section className="rounded-lg border border-border/60 bg-secondary/60">
-      <button
+      <Button
         type="button"
-        className="flex w-full items-start gap-2 rounded-lg p-3 text-left transition-colors hover:bg-secondary/80"
+        variant="ghost"
+        className="h-auto w-full justify-start gap-2 rounded-lg p-3 text-left hover:bg-secondary/80"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
       >
@@ -57,7 +58,7 @@ function ThemePanelGroup({
             <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
           ) : null}
         </div>
-      </button>
+      </Button>
       {open ? (
         <div className="space-y-3 border-t border-border/60 px-3 pb-3 pt-3">
           {children}

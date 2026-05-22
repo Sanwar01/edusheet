@@ -29,11 +29,59 @@ export interface WorksheetQuestion {
   points?: number;
 }
 
+/** Rich content inside a section (shown between questions). */
+export type WorksheetStructureBlock =
+  | {
+      id: string;
+      block_type: 'heading';
+      text: string;
+      level?: 2 | 3 | 4;
+    }
+  | {
+      id: string;
+      block_type: 'paragraph';
+      text: string;
+    }
+  | { id: string; block_type: 'divider' }
+  | {
+      id: string;
+      block_type: 'spacer';
+      heightPx?: number;
+    }
+  | {
+      id: string;
+      block_type: 'callout';
+      text: string;
+      tone?: 'info' | 'warning' | 'success';
+    }
+  | {
+      id: string;
+      block_type: 'image';
+      src: string;
+      alt: string;
+    };
+
+/** Rows inside a section: graded questions and optional layout blocks. */
+export type WorksheetSectionItem = WorksheetQuestion | WorksheetStructureBlock;
+
+export function isWorksheetQuestion(
+  item: WorksheetSectionItem,
+): item is WorksheetQuestion {
+  return 'question_type' in item;
+}
+
+export function isStructureBlock(
+  item: WorksheetSectionItem,
+): item is WorksheetStructureBlock {
+  return 'block_type' in item;
+}
+
 export interface WorksheetSection {
   id: string;
   type: 'section';
   heading: string;
-  questions: WorksheetQuestion[];
+  /** Questions and rich layout blocks in document order. */
+  questions: WorksheetSectionItem[];
 }
 
 export interface WorksheetContent {

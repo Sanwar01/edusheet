@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   DndContext,
   PointerSensor,
@@ -31,11 +31,14 @@ import type {
   SectionLayoutConfig,
   WorksheetContent,
   WorksheetQuestion,
+  WorksheetSectionItem,
 } from '@/types/worksheet';
+import { isWorksheetQuestion } from '@/types/worksheet';
 import { defaultSectionLayout } from '@/features/worksheets/layout';
 import { sectionQuestionGridColsClass } from '@/features/worksheets/section-grid-responsive';
 import { cn } from '@/lib/utils';
 import { SortableQuestionShell } from '@/components/worksheets/sortable-blocks';
+import { StructureBlockEditor } from '@/components/worksheets/structure-block-editor';
 import { duplicateQuestion } from '@/components/worksheets/editor-shell.helpers';
 import {
   isPaletteItemType,
@@ -102,6 +105,16 @@ const buildQuestionByType = (
   return base;
 };
 
+function replaceQuestionInSectionItems(
+  items: WorksheetSectionItem[],
+  questionId: string,
+  updater: (q: WorksheetQuestion) => WorksheetQuestion,
+): WorksheetSectionItem[] {
+  return items.map((row) =>
+    row.id === questionId && isWorksheetQuestion(row) ? updater(row) : row,
+  );
+}
+
 export const SectionQuestionsDnd = ({
   section,
   onChangeQuestions,
@@ -112,7 +125,7 @@ export const SectionQuestionsDnd = ({
   showScoring = true,
 }: {
   section: WorksheetContent['sections'][number];
-  onChangeQuestions: (next: WorksheetQuestion[]) => void;
+  onChangeQuestions: (next: WorksheetSectionItem[]) => void;
   questionStartNumber: number;
   onDropPaletteItem: (type: PaletteItemType, insertIndex?: number) => void;
   showDropTargets: boolean;
@@ -125,6 +138,18 @@ export const SectionQuestionsDnd = ({
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
+
+  const questionOrdinalById = useMemo(() => {
+    const map = new Map<string, number>();
+    let n = questionStartNumber;
+    for (const row of section.questions) {
+      if (isWorksheetQuestion(row)) {
+        map.set(row.id, n);
+        n += 1;
+      }
+    }
+    return map;
+  }, [section.questions, questionStartNumber]);
 
   const isGrid = sectionLayout.mode === 'grid';
   const gridColsClass = sectionQuestionGridColsClass(sectionLayout.gridColumns);
@@ -157,9 +182,9 @@ export const SectionQuestionsDnd = ({
             : 'border-slate-300 bg-slate-50 text-slate-500'
         }`}
       >
-        No questions yet. Click{' '}
+        No content yet. Click{' '}
         <span className="font-medium">Add question</span> to begin, or drop a
-        question here.
+        block or question here.
       </div>
     );
   }
@@ -189,7 +214,68 @@ export const SectionQuestionsDnd = ({
                   : 'space-y-2.5',
               )}
             >
-              {section.questions.map((question, index) => (
+              {section.questions.map((item, index) => {
+                if (!isWorksheetQuestion(item)) {
+                  return (
+                    <div
+                      key={item.id}
+                      className={cn(
+                        'space-y-2',
+                        isGrid && 'col-span-full min-w-0',
+                        isGrid &&
+                          sectionLayout.border === 'cells' &&
+                          'rounded-md border border-slate-200 bg-slate-50 p-2',
+                      )}
+                    >
+                      {showDropTargets ? (
+                        <div
+                          onDragOver={(event) => event.preventDefault()}
+                          onDrop={(event) => {
+                            const rawType =
+                              event.dataTransfer.getData(PALETTE_DRAG_MIME);
+                            if (!rawType || !isPaletteItemType(rawType)) return;
+                            if (rawType === 'section') return;
+                            onDropPaletteItem(rawType, index);
+                          }}
+                          className="rounded border border-dashed border-indigo-300 bg-indigo-50/60 px-2 py-1 text-[11px] text-slate-600 transition-colors hover:border-indigo-500 hover:bg-indigo-100/70"
+                        >
+                          Drop here (insert before this row)
+                        </div>
+                      ) : null}
+                      <SortableQuestionShell
+                        id={item.id}
+                        sortData={{
+                          kind: 'structure_block',
+                          blockId: item.id,
+                          sectionId: section.id,
+                          index,
+                        }}
+                      >
+                        <div id={`block_${item.id}`}>
+                          <StructureBlockEditor
+                            block={item}
+                            onChange={(next) =>
+                              onChangeQuestions(
+                                section.questions.map((row, i) =>
+                                  i === index ? next : row,
+                                ),
+                              )
+                            }
+                            onDelete={() =>
+                              onChangeQuestions(
+                                section.questions.filter((_, i) => i !== index),
+                              )
+                            }
+                          />
+                        </div>
+                      </SortableQuestionShell>
+                    </div>
+                  );
+                }
+                const question = item;
+                const qOrdinal =
+                  questionOrdinalById.get(question.id) ?? questionStartNumber;
+                return (
                 <div
                   key={question.id}
                   className={cn(
@@ -212,7 +298,7 @@ export const SectionQuestionsDnd = ({
                       }}
                       className="rounded border border-dashed border-indigo-300 bg-indigo-50/60 px-2 py-1 text-[11px] text-slate-600 transition-colors hover:border-indigo-500 hover:bg-indigo-100/70"
                     >
-                      Drop question here (before {questionStartNumber + index})
+                      Drop here (insert before question {qOrdinal})
                     </div>
                   ) : null}
                   <SortableQuestionShell
@@ -238,7 +324,7 @@ export const SectionQuestionsDnd = ({
                           !isGrid && 'shrink-0',
                         )}
                       >
-                        Question {questionStartNumber + index}
+                        Question {qOrdinal}
                       </p>
                       <div
                         className={cn(
@@ -274,13 +360,14 @@ export const SectionQuestionsDnd = ({
                           value={question.question_type}
                           onValueChange={(nextType) =>
                             onChangeQuestions(
-                              section.questions.map((q) =>
-                                q.id === question.id
-                                  ? buildQuestionByType(
-                                      q,
-                                      nextType as QuestionType,
-                                    )
-                                  : q,
+                              replaceQuestionInSectionItems(
+                                section.questions,
+                                question.id,
+                                (q) =>
+                                  buildQuestionByType(
+                                    q,
+                                    nextType as QuestionType,
+                                  ),
                               ),
                             )
                           }
@@ -314,17 +401,17 @@ export const SectionQuestionsDnd = ({
                             value={question.points ?? 1}
                             onChange={(e) =>
                               onChangeQuestions(
-                                section.questions.map((q) =>
-                                  q.id === question.id
-                                    ? {
-                                        ...q,
-                                        points: Number.isNaN(
-                                          Number(e.target.value),
-                                        )
-                                          ? 1
-                                          : Math.max(1, Number(e.target.value)),
-                                      }
-                                    : q,
+                                replaceQuestionInSectionItems(
+                                  section.questions,
+                                  question.id,
+                                  (q) => ({
+                                    ...q,
+                                    points: Number.isNaN(
+                                      Number(e.target.value),
+                                    )
+                                      ? 1
+                                      : Math.max(1, Number(e.target.value)),
+                                  }),
                                 ),
                               )
                             }
@@ -342,10 +429,10 @@ export const SectionQuestionsDnd = ({
                       className="w-full border-slate-200 bg-white font-semibold rounded-md p-2"
                       onChange={(e) =>
                         onChangeQuestions(
-                          section.questions.map((q) =>
-                            q.id === question.id
-                              ? { ...q, prompt: e.target.value }
-                              : q,
+                          replaceQuestionInSectionItems(
+                            section.questions,
+                            question.id,
+                            (q) => ({ ...q, prompt: e.target.value }),
                           ),
                         )
                       }
@@ -382,15 +469,21 @@ export const SectionQuestionsDnd = ({
                                     value={option}
                                     onChange={(e) =>
                                       onChangeQuestions(
-                                        section.questions.map((q) => {
-                                          if (q.id !== question.id) return q;
-                                          const nextOptions = [
-                                            ...(q.options ?? []),
-                                          ];
-                                          nextOptions[optionIndex] =
-                                            e.target.value;
-                                          return { ...q, options: nextOptions };
-                                        }),
+                                        replaceQuestionInSectionItems(
+                                          section.questions,
+                                          question.id,
+                                          (q) => {
+                                            const nextOptions = [
+                                              ...(q.options ?? []),
+                                            ];
+                                            nextOptions[optionIndex] =
+                                              e.target.value;
+                                            return {
+                                              ...q,
+                                              options: nextOptions,
+                                            };
+                                          },
+                                        ),
                                       )
                                     }
                                     placeholder={`Option ${optionIndex + 1}`}
@@ -408,10 +501,10 @@ export const SectionQuestionsDnd = ({
                                       className="h-8 shrink-0 text-xs"
                                       onClick={() =>
                                         onChangeQuestions(
-                                          section.questions.map((q) =>
-                                            q.id === question.id
-                                              ? { ...q, answer: option }
-                                              : q,
+                                          replaceQuestionInSectionItems(
+                                            section.questions,
+                                            question.id,
+                                            (q) => ({ ...q, answer: option }),
                                           ),
                                         )
                                       }
@@ -430,21 +523,24 @@ export const SectionQuestionsDnd = ({
                                     }
                                     onClick={() =>
                                       onChangeQuestions(
-                                        section.questions.map((q) => {
-                                          if (q.id !== question.id) return q;
-                                          const nextOptions = [
-                                            ...(q.options ?? []),
-                                          ].filter((_, i) => i !== optionIndex);
-                                          const nextAnswer =
-                                            q.answer === option
-                                              ? (nextOptions[0] ?? '')
-                                              : q.answer;
-                                          return {
-                                            ...q,
-                                            options: nextOptions,
-                                            answer: nextAnswer,
-                                          };
-                                        }),
+                                        replaceQuestionInSectionItems(
+                                          section.questions,
+                                          question.id,
+                                          (q) => {
+                                            const nextOptions = [
+                                              ...(q.options ?? []),
+                                            ].filter((_, i) => i !== optionIndex);
+                                            const nextAnswer =
+                                              q.answer === option
+                                                ? (nextOptions[0] ?? '')
+                                                : q.answer;
+                                            return {
+                                              ...q,
+                                              options: nextOptions,
+                                              answer: nextAnswer,
+                                            };
+                                          },
+                                        ),
                                       )
                                     }
                                   >
@@ -458,16 +554,16 @@ export const SectionQuestionsDnd = ({
                               className="h-8 px-2 text-xs text-slate-600"
                               onClick={() =>
                                 onChangeQuestions(
-                                  section.questions.map((q) =>
-                                    q.id === question.id
-                                      ? {
-                                          ...q,
-                                          options: [
-                                            ...(q.options ?? []),
-                                            `Option ${(q.options?.length ?? 0) + 1}`,
-                                          ],
-                                        }
-                                      : q,
+                                  replaceQuestionInSectionItems(
+                                    section.questions,
+                                    question.id,
+                                    (q) => ({
+                                      ...q,
+                                      options: [
+                                        ...(q.options ?? []),
+                                        `Option ${(q.options?.length ?? 0) + 1}`,
+                                      ],
+                                    }),
                                   ),
                                 )
                               }
@@ -500,10 +596,10 @@ export const SectionQuestionsDnd = ({
                                   className="h-8 text-xs"
                                   onClick={() =>
                                     onChangeQuestions(
-                                      section.questions.map((q) =>
-                                        q.id === question.id
-                                          ? { ...q, answer: value }
-                                          : q,
+                                      replaceQuestionInSectionItems(
+                                        section.questions,
+                                        question.id,
+                                        (q) => ({ ...q, answer: value }),
                                       ),
                                     )
                                   }
@@ -524,10 +620,10 @@ export const SectionQuestionsDnd = ({
                               className="w-full border-slate-200 bg-white"
                               onChange={(e) =>
                                 onChangeQuestions(
-                                  section.questions.map((q) =>
-                                    q.id === question.id
-                                      ? { ...q, answer: e.target.value }
-                                      : q,
+                                  replaceQuestionInSectionItems(
+                                    section.questions,
+                                    question.id,
+                                    (q) => ({ ...q, answer: e.target.value }),
                                   ),
                                 )
                               }
@@ -544,10 +640,10 @@ export const SectionQuestionsDnd = ({
                               className="w-full h-full border-slate-200 bg-white"
                               onChange={(e) =>
                                 onChangeQuestions(
-                                  section.questions.map((q) =>
-                                    q.id === question.id
-                                      ? { ...q, answer: e.target.value }
-                                      : q,
+                                  replaceQuestionInSectionItems(
+                                    section.questions,
+                                    question.id,
+                                    (q) => ({ ...q, answer: e.target.value }),
                                   ),
                                 )
                               }
@@ -589,7 +685,8 @@ export const SectionQuestionsDnd = ({
                     )}
                   </SortableQuestionShell>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </SortableContext>
@@ -605,7 +702,7 @@ export const SectionQuestionsDnd = ({
           }}
           className="rounded-md border border-dashed border-indigo-300 bg-indigo-50/60 px-3 py-2 text-xs text-slate-600 transition-colors hover:border-indigo-500 hover:bg-indigo-100/70"
         >
-          Drop a question component here (end of section).
+          Drop a block or question here (end of section).
         </div>
       ) : null}
     </div>

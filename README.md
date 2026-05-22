@@ -50,6 +50,11 @@ cp .env.example .env.local
 - If unset: uses **Gemini** when only `GEMINI_API_KEY` is set; otherwise **OpenAI** when `OPENAI_API_KEY` is set.
 - For local testing with Gemini: set `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`, e.g. `gemini-2.0-flash`). You can omit `OPENAI_API_KEY` to force Gemini, or set `WORKSHEET_AI_PROVIDER=gemini` explicitly.
 
+### Worksheet images (editor upload + stock)
+
+- Apply migration `supabase/migrations/0005_worksheet_images_storage.sql` (creates public `worksheet-images` bucket).
+- **`PEXELS_API_KEY`** (optional): [Pexels API](https://www.pexels.com/api/) key enables the **Stock** tab in the image block. Without it, teachers can still upload or paste a URL.
+
 ## Local Setup
 
 1. Install dependencies
@@ -58,26 +63,26 @@ cp .env.example .env.local
 pnpm install
 ```
 
-2. Create a Supabase project and run SQL migrations:
+2.Create a Supabase project and run SQL migrations:
 
 - `supabase/migrations/0001_init.sql`
 - `supabase/migrations/0002_rls_policies.sql`
 - `supabase/migrations/0003_webhook_idempotency_audit.sql`
 
-3. Configure Supabase Auth redirect URLs:
+3.Configure Supabase Auth redirect URLs:
 
 - `http://localhost:3000/sign-in`
 - `http://localhost:3000/dashboard`
 
-4. Create Stripe product + recurring Pro price, set `STRIPE_PRO_PRICE_ID`.
+4.Create Stripe product + recurring Pro price, set `STRIPE_PRO_PRICE_ID`.
 
-5. Configure Stripe webhook endpoint:
+5.Configure Stripe webhook endpoint:
 
 - Local/dev URL -> `/api/stripe/webhook`
 
-6. Add OpenAI API key.
+6.Add OpenAI API key.
 
-7. Run development server:
+7.Run development server:
 
 ```bash
 pnpm dev

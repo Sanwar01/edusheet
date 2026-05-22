@@ -1,4 +1,5 @@
 import { WorksheetQuestionPreview } from '@/components/worksheets/worksheet-question-preview';
+import { StructureBlockPreview } from '@/components/worksheets/structure-block-preview';
 import { defaultSectionLayout } from '@/features/worksheets/layout';
 import { sectionQuestionGridColsClass } from '@/features/worksheets/section-grid-responsive';
 import { cn } from '@/lib/utils';
@@ -7,6 +8,7 @@ import type {
   WorksheetLayout,
   WorksheetTheme,
 } from '@/types/worksheet';
+import { isWorksheetQuestion } from '@/types/worksheet';
 
 export function EditorPreviewPane({
   content,
@@ -90,9 +92,19 @@ export function EditorPreviewPane({
           const gridColsClass = sectionQuestionGridColsClass(
             sectionLayout.gridColumns,
           );
-          let globalQ = 0;
-          for (let i = 0; i < sectionIndex; i += 1) {
-            globalQ += content.sections[i].questions.length;
+          const questionNumberById = new Map<string, number>();
+          let qCounter = content.sections
+            .slice(0, sectionIndex)
+            .reduce(
+              (acc, s) =>
+                acc + s.questions.filter(isWorksheetQuestion).length,
+              0,
+            );
+          for (const row of section.questions) {
+            if (isWorksheetQuestion(row)) {
+              qCounter += 1;
+              questionNumberById.set(row.id, qCounter);
+            }
           }
 
           return (
@@ -123,11 +135,30 @@ export function EditorPreviewPane({
                       : 'space-y-4',
                   )}
                 >
-                  {section.questions.map((question, qIndex) => {
-                    const qNum = globalQ + qIndex + 1;
+                  {section.questions.map((row) => {
+                    if (!isWorksheetQuestion(row)) {
+                      return (
+                        <div
+                          key={row.id}
+                          className={cn(
+                            isGrid && 'col-span-full min-w-0',
+                            isGrid &&
+                              sectionLayout.border === 'cells' &&
+                              'rounded-md border border-slate-200 bg-white p-3',
+                          )}
+                        >
+                          <StructureBlockPreview
+                            block={row}
+                            theme={theme}
+                            isGrid={isGrid}
+                          />
+                        </div>
+                      );
+                    }
+                    const qNum = questionNumberById.get(row.id) ?? 1;
                     return (
                       <div
-                        key={question.id}
+                        key={row.id}
                         className={cn(
                           isGrid && 'min-w-0',
                           isGrid &&
@@ -136,7 +167,7 @@ export function EditorPreviewPane({
                         )}
                       >
                         <WorksheetQuestionPreview
-                          question={question}
+                          question={row}
                           index={qNum}
                           theme={theme}
                           optionLayout={theme.optionLayout}

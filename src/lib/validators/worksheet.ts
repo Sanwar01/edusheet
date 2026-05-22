@@ -47,11 +47,60 @@ export const QuestionSchema = z.object({
   }
 });
 
+const HeadingBlockSchema = z.object({
+  id: z.string().min(1),
+  block_type: z.literal('heading'),
+  text: z.string().default(''),
+  level: z.union([z.literal(2), z.literal(3), z.literal(4)]).default(3),
+});
+
+const ParagraphBlockSchema = z.object({
+  id: z.string().min(1),
+  block_type: z.literal('paragraph'),
+  text: z.string().default(''),
+});
+
+const DividerBlockSchema = z.object({
+  id: z.string().min(1),
+  block_type: z.literal('divider'),
+});
+
+const SpacerBlockSchema = z.object({
+  id: z.string().min(1),
+  block_type: z.literal('spacer'),
+  heightPx: z.number().int().min(8).max(200).optional().default(24),
+});
+
+const CalloutBlockSchema = z.object({
+  id: z.string().min(1),
+  block_type: z.literal('callout'),
+  text: z.string().default(''),
+  tone: z.enum(['info', 'warning', 'success']).optional().default('info'),
+});
+
+const ImageBlockSchema = z.object({
+  id: z.string().min(1),
+  block_type: z.literal('image'),
+  src: z.string().default(''),
+  alt: z.string().default(''),
+});
+
+export const StructureBlockSchema = z.discriminatedUnion('block_type', [
+  HeadingBlockSchema,
+  ParagraphBlockSchema,
+  DividerBlockSchema,
+  SpacerBlockSchema,
+  CalloutBlockSchema,
+  ImageBlockSchema,
+]);
+
+export const SectionItemSchema = z.union([QuestionSchema, StructureBlockSchema]);
+
 export const SectionSchema = z.object({
   id: z.string().min(1),
   type: z.literal('section'),
   heading: z.string().default(''),
-  questions: z.array(QuestionSchema).default([]),
+  questions: z.array(SectionItemSchema).default([]),
 });
 
 export const WorksheetContentSchema = z.object({

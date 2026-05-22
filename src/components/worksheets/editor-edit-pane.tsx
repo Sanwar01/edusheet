@@ -26,6 +26,7 @@ import type {
   WorksheetLayout,
   WorksheetTheme,
 } from '@/types/worksheet';
+import { isWorksheetQuestion } from '@/types/worksheet';
 import { defaultSectionLayout } from '@/features/worksheets/layout';
 
 type CompletionState = {
@@ -267,7 +268,13 @@ export function EditorEditPane({
                   const questionStartNumber =
                     model.content.sections
                       .slice(0, index)
-                      .reduce((sum, s) => sum + s.questions.length, 0) + 1;
+                      .reduce(
+                        (sum, s) =>
+                          sum +
+                          s.questions.filter((row) => isWorksheetQuestion(row))
+                            .length,
+                        0,
+                      ) + 1;
                   return (
                     <div key={section.id} className="space-y-2">
                       {model.isPaletteDragging ? (

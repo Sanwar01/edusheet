@@ -15,7 +15,14 @@ import {
 import { buildWorksheetLayout, defaultSectionLayout } from '@/features/worksheets/layout';
 import { defaultTheme } from '@/features/worksheets/defaults';
 import { LayoutSchema, WorksheetContentSchema } from '@/lib/validators/worksheet';
-import type { WorksheetContent, WorksheetLayout, WorksheetTheme } from '@/types/worksheet';
+import type {
+  WorksheetContent,
+  WorksheetLayout,
+  WorksheetQuestion,
+  WorksheetStructureBlock,
+  WorksheetTheme,
+} from '@/types/worksheet';
+import { isWorksheetQuestion } from '@/types/worksheet';
 
 const EXPORT_PER_MINUTE = 12;
 
@@ -56,7 +63,7 @@ function promptWeightCss(weight: WorksheetTheme['promptFontWeight']) {
 }
 
 function renderQuestionHtml(
-  q: WorksheetContent['sections'][number]['questions'][number],
+  q: WorksheetQuestion,
   qNum: number,
   theme: WorksheetTheme,
   includeAnswerKey: boolean,
@@ -138,6 +145,65 @@ function renderQuestionHtml(
   `;
 }
 
+function renderStructureBlockHtml(
+  block: WorksheetStructureBlock,
+  theme: WorksheetTheme,
+  isGrid: boolean,
+): string {
+  const tc = theme.textColor;
+  const pc = theme.primaryColor;
+  const mute = theme.answerTextColor;
+  const gridSpan = isGrid ? ' style="grid-column:1 / -1"' : '';
+
+  switch (block.block_type) {
+    case 'heading': {
+      const lvl = block.level ?? 3;
+      const fs =
+        lvl === 2
+          ? Math.max(theme.headingFontSize - 2, 18)
+          : lvl === 3
+            ? Math.max(theme.headingFontSize - 6, 16)
+            : Math.max(theme.headingFontSize - 8, 14);
+      return `<div class="structure-block"${gridSpan}><div style="font-size:${fs}px;font-weight:600;color:${tc}">${escapeHtml(block.text.trim() || 'Heading')}</div></div>`;
+    }
+    case 'paragraph':
+      return `<div class="structure-block"${gridSpan}><p style="color:${tc};font-size:${theme.bodyFontSize}px;white-space:pre-wrap;margin:8px 0">${escapeHtml(block.text.trim() || 'Paragraph')}</p></div>`;
+    case 'divider':
+      return `<div class="structure-block"${gridSpan}><hr style="border:0;border-top:2px solid ${pc};margin:12px 0" /></div>`;
+    case 'spacer': {
+      const h = block.heightPx ?? 24;
+      return `<div class="structure-block"${gridSpan}><div style="height:${h}px" aria-hidden="true"></div></div>`;
+    }
+    case 'callout': {
+      const tone = block.tone ?? 'info';
+      const bg =
+        tone === 'warning'
+          ? '#fffbeb'
+          : tone === 'success'
+            ? '#ecfdf5'
+            : '#eff6ff';
+      const bd =
+        tone === 'warning'
+          ? '#fcd34d'
+          : tone === 'success'
+            ? '#6ee7b7'
+            : '#93c5fd';
+      return `<div class="structure-block"${gridSpan}><div style="padding:10px 12px;border-radius:8px;border:1px solid ${bd};background:${bg};color:#1f2937;font-size:${theme.bodyFontSize}px">${escapeHtml(block.text.trim() || 'Callout')}</div></div>`;
+    }
+    case 'image': {
+      const src = block.src.trim();
+      const alt = escapeHtml(block.alt || 'Image');
+      if (!src) {
+        return `<div class="structure-block"${gridSpan}><div style="min-height:120px;border:1px dashed #cbd5e1;border-radius:8px;display:flex;align-items:center;justify-content:center;color:${mute};font-size:14px">Image (add URL in the editor)</div></div>`;
+      }
+      const cap = block.alt.trim()
+        ? `<figcaption style="text-align:center;font-size:12px;color:${mute};margin-top:4px">${alt}</figcaption>`
+        : '';
+      return `<div class="structure-block"${gridSpan}><figure style="margin:8px 0"><img src="${escapeHtml(src)}" alt="${alt}" style="max-width:100%;max-height:280px;border-radius:8px;border:1px solid #e2e8f0" />${cap}</figure></div>`;
+    }
+  }
+}
+
 function buildPrintableHtml({
   content,
   theme,
@@ -174,7 +240,8 @@ function buildPrintableHtml({
     .map((section, sectionIndex) => {
       const safeHeading = escapeHtml(section.heading || '');
       const sectionPoints = (section.questions ?? []).reduce(
-        (sum, q) => sum + (q.points ?? 0),
+        (sum, row) =>
+          sum + (isWorksheetQuestion(row) ? (row.points ?? 0) : 0),
         0,
       );
       const sectionLayout =
@@ -190,13 +257,23 @@ function buildPrintableHtml({
 
       let globalQ = 0;
       for (let i = 0; i < sectionIndex; i += 1) {
-        globalQ += content.sections[i].questions.length;
+        globalQ += (content.sections[i].questions ?? []).filter(
+          isWorksheetQuestion,
+        ).length;
       }
 
-      const questionsHtml = (section.questions ?? [])
-        .map((q, qIndex) => {
-          const qNum = globalQ + qIndex + 1;
-          const inner = renderQuestionHtml(q, qNum, theme, includeAnswerKey);
+      const rowsHtml = (section.questions ?? [])
+        .map((row) => {
+          if (!isWorksheetQuestion(row)) {
+            const inner = renderStructureBlockHtml(row, theme, isGrid);
+            const cellClass =
+              isGrid && sectionLayout.border === 'cells'
+                ? 'question-cell'
+                : '';
+            return `<div class="${cellClass}">${inner}</div>`;
+          }
+          globalQ += 1;
+          const inner = renderQuestionHtml(row, globalQ, theme, includeAnswerKey);
           const cellClass =
             isGrid && sectionLayout.border === 'cells' ? 'question-cell' : '';
           return `<div class="${cellClass}">${inner}</div>`;
@@ -205,10 +282,10 @@ function buildPrintableHtml({
 
       const gridWrapper =
         isGrid && sectionLayout.border === 'outer'
-          ? `<div class="section-grid section-grid-outer ${gridColsClass}">${questionsHtml}</div>`
+          ? `<div class="section-grid section-grid-outer ${gridColsClass}">${rowsHtml}</div>`
           : isGrid
-            ? `<div class="section-grid ${gridColsClass}">${questionsHtml}</div>`
-            : `<div class="section-stack">${questionsHtml}</div>`;
+            ? `<div class="section-grid ${gridColsClass}">${rowsHtml}</div>`
+            : `<div class="section-stack">${rowsHtml}</div>`;
 
       return `
         <h2 style="color:${theme.textColor}">Section ${sectionIndex + 1}: ${safeHeading || 'Untitled section'}${
@@ -223,7 +300,12 @@ function buildPrintableHtml({
 
   const totalPoints = (content.sections ?? []).reduce(
     (sum, section) =>
-      sum + (section.questions ?? []).reduce((inner, q) => inner + (q.points ?? 0), 0),
+      sum +
+      (section.questions ?? []).reduce(
+        (inner, row) =>
+          inner + (isWorksheetQuestion(row) ? (row.points ?? 0) : 0),
+        0,
+      ),
     0,
   );
 

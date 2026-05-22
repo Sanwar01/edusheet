@@ -14,6 +14,9 @@ type ServerEnv = {
   GEMINI_API_KEY?: string;
   GEMINI_MODEL: string;
   WORKSHEET_AI_PROVIDER: string;
+  WORKSHEET_IMAGES_BUCKET: string;
+  /** Optional — enables stock photo search in the worksheet editor (Pexels). */
+  PEXELS_API_KEY?: string;
   NODE_ENV: string;
 };
 
@@ -64,6 +67,11 @@ export function getServerEnv(): ServerEnv {
       process.env.WORKSHEET_AI_PROVIDER,
       'openai',
     ).toLowerCase(),
+    WORKSHEET_IMAGES_BUCKET: optionalEnv(
+      process.env.WORKSHEET_IMAGES_BUCKET,
+      'worksheet-images',
+    ),
+    PEXELS_API_KEY: process.env.PEXELS_API_KEY?.trim(),
     NODE_ENV: optionalEnv(process.env.NODE_ENV, 'development'),
   };
 }

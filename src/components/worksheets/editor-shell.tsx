@@ -10,6 +10,7 @@ import type {
   WorksheetLayout,
   WorksheetTheme,
 } from '@/types/worksheet';
+import { isWorksheetQuestion } from '@/types/worksheet';
 import {
   buildWorksheetLayout,
   defaultSectionLayout,
@@ -85,9 +86,7 @@ export const EditorShell = ({
     if (typeof window === 'undefined') return true;
     return window.localStorage.getItem('edusheet-editor-show-scoring') !== '0';
   });
-  const [leftTab, setLeftTab] = useState<'structure' | 'components'>(
-    'structure',
-  );
+  const [leftTab, setLeftTab] = useState<'structure' | 'blocks'>('structure');
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isPaletteDragging, setIsPaletteDragging] = useState(false);
   const [sectionCollapsed, setSectionCollapsed] = useState<
@@ -489,6 +488,20 @@ export const EditorShell = ({
                     ...prev,
                     [sectionId]: false,
                   }));
+                }
+                if (nodeId.startsWith('block_')) {
+                  const blockId = nodeId.replace('block_', '');
+                  const sec = content.sections.find((s) =>
+                    s.questions.some(
+                      (row) => row.id === blockId && !isWorksheetQuestion(row),
+                    ),
+                  );
+                  if (sec) {
+                    setSectionCollapsed((prev) => ({
+                      ...prev,
+                      [sec.id]: false,
+                    }));
+                  }
                 }
                 focusNode(nodeId, setSelectedNodeId);
               }}
