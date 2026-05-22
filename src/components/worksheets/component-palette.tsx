@@ -142,10 +142,7 @@ export function ComponentPalette({
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             {group.title}
           </p>
-          <div
-            className="grid grid-cols-2 gap-2"
-            onClick={() => onAdd(group.items[0].type)}
-          >
+          <div className="grid grid-cols-2 gap-2">
             {group.items.map((item) => {
               const Icon = item.Icon;
               return (
@@ -164,6 +161,10 @@ export function ComponentPalette({
                     'cursor-grab active:cursor-grabbing',
                     'transition-colors hover:border-primary',
                   )}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAdd(item.type);
+                  }}
                 >
                   <div
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border/80 bg-background text-muted-foreground group-hover:text-foreground"
