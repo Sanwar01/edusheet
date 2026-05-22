@@ -73,7 +73,7 @@ const BLOCK_GROUPS: { id: string; title: string; items: PaletteItem[] }[] = [
       {
         type: 'image',
         label: 'Image',
-        description: 'Picture from a URL',
+        description: 'Upload or paste a link',
         Icon: ImageIcon,
       },
     ],

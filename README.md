@@ -50,10 +50,9 @@ cp .env.example .env.local
 - If unset: uses **Gemini** when only `GEMINI_API_KEY` is set; otherwise **OpenAI** when `OPENAI_API_KEY` is set.
 - For local testing with Gemini: set `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`, e.g. `gemini-2.0-flash`). You can omit `OPENAI_API_KEY` to force Gemini, or set `WORKSHEET_AI_PROVIDER=gemini` explicitly.
 
-### Worksheet images (editor upload + stock)
+### Worksheet images (editor upload)
 
 - Apply migration `supabase/migrations/0005_worksheet_images_storage.sql` (creates public `worksheet-images` bucket).
-- **`PEXELS_API_KEY`** (optional): [Pexels API](https://www.pexels.com/api/) key enables the **Stock** tab in the image block. Without it, teachers can still upload or paste a URL.
 
 ## Local Setup
 
