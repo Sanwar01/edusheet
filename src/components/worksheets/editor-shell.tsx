@@ -23,7 +23,11 @@ import {
   defaultSectionLayout,
 } from '@/features/worksheets/layout';
 import { EditorToolbar } from './editor-toolbar';
-import { ThemeSettingsSidebar } from './theme-settings-sidebar';
+import {
+  RightEditorSidebar,
+  type RightSidebarTab,
+} from '@/components/worksheets/right-editor-sidebar';
+import { resolveEditorSelection } from '@/features/worksheets/editor/resolve-editor-selection';
 import { WorksheetContentSchema } from '@/lib/validators/worksheet';
 import { LeftEditorSidebar } from '@/components/worksheets/left-editor-sidebar';
 import type { PaletteItemType } from '@/components/worksheets/editor-dnd-types';
@@ -86,7 +90,9 @@ export const EditorShell = ({
   const [sectionLayoutOverrides, setSectionLayoutOverrides] = useState<
     Record<string, SectionLayoutConfig>
   >(() => ({ ...initialLayout.sectionLayouts }));
-  const [showThemeSidebar, setShowThemeSidebar] = useState(true);
+  const [showRightSidebar, setShowRightSidebar] = useState(true);
+  const [rightSidebarTab, setRightSidebarTab] =
+    useState<RightSidebarTab>('appearance');
   const [showWorksheetSidebar, setShowWorksheetSidebar] = useState(true);
   const [showAnswerKey, setShowAnswerKey] = useState(false);
   const [showScoring, setShowScoring] = useState(() => {
@@ -395,6 +401,12 @@ export const EditorShell = ({
     [selectedNodeId],
   );
 
+  useEffect(() => {
+    if (!selectedNodeId) return;
+    const selection = resolveEditorSelection(content, selectedNodeId);
+    if (selection.type === 'none') setSelectedNodeId(null);
+  }, [content, selectedNodeId]);
+
   const selectNode = useCallback(
     (nodeId: string) => {
       if (nodeId.startsWith('section_')) {
@@ -551,7 +563,7 @@ export const EditorShell = ({
         <main
           className={`flex-1 overflow-auto p-4 transition-[padding] duration-200 md:p-8 ${
             showWorksheetSidebar ? 'lg:pl-76' : ''
-          } ${showThemeSidebar ? 'lg:pr-76' : ''}`}
+          } ${showRightSidebar ? 'lg:pr-76' : ''}`}
           onMouseDown={mode === 'edit' ? handleEditCanvasMouseDown : undefined}
         >
           <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 lg:flex-row lg:items-start">
@@ -577,12 +589,21 @@ export const EditorShell = ({
           </div>
         </main>
 
-        {showThemeSidebar ? (
+        {showRightSidebar ? (
           <div className="fixed top-16 right-0 bottom-0 z-40 hidden w-72 flex-col overflow-hidden border-l border-border bg-background lg:flex">
-            <ThemeSettingsSidebar
+            <RightEditorSidebar
+              tab={rightSidebarTab}
+              setTab={setRightSidebarTab}
               theme={theme}
               setTheme={setThemeWithHistory}
-              onClose={() => setShowThemeSidebar(false)}
+              content={content}
+              layout={layout}
+              selectedNodeId={selectedNodeId}
+              showScoring={showScoring}
+              onContentChange={setContentWithHistory}
+              onUpdateSection={updateSectionById}
+              onUpdateSectionLayout={updateSectionLayout}
+              onClose={() => setShowRightSidebar(false)}
             />
           </div>
         ) : (
@@ -591,10 +612,10 @@ export const EditorShell = ({
             variant="outline"
             size="sm"
             className="fixed top-24 right-3 z-40 hidden lg:flex"
-            onClick={() => setShowThemeSidebar(true)}
+            onClick={() => setShowRightSidebar(true)}
           >
             <PanelRightOpen className="h-3.5 w-3.5" />
-            Open theme panel
+            Open right panel
           </Button>
         )}
       </div>

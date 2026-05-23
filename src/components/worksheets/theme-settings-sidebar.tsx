@@ -72,35 +72,16 @@ export const ThemeSettingsSidebar = ({
   theme,
   setTheme,
   onClose,
+  embedded = false,
 }: {
   theme: WorksheetTheme;
   setTheme: Dispatch<SetStateAction<WorksheetTheme>>;
   onClose?: () => void;
+  /** When true, omits outer chrome (used inside the right panel tab). */
+  embedded?: boolean;
 }) => {
-  return (
-    <aside className="flex min-h-0 flex-1 flex-col">
-      <div className="shrink-0 space-y-4 border-b border-border p-4 pb-3">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">
-                Appearance
-              </h3>
-              <p className="text-xs text-muted-foreground">Optional styling tweaks</p>
-            </div>
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            className="h-7 px-2 text-xs text-muted-foreground"
-            onClick={onClose}
-          >
-            <PanelRightClose className="h-3.5 w-3.5" />
-            Close
-          </Button>
-        </div>
-
+  const panels = (
+    <>
         <Button
           type="button"
           variant="outline"
@@ -109,9 +90,8 @@ export const ThemeSettingsSidebar = ({
         >
           Reset theme to default
         </Button>
-      </div>
 
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-y-contain p-4 pt-3 pb-6">
+      <div className="space-y-3">
         <ThemePanelGroup
           title="Typography"
           description="Sizes and weight for titles, body copy, and question prompts."
@@ -346,6 +326,45 @@ export const ThemeSettingsSidebar = ({
             />
           </div>
         </ThemePanelGroup>
+      </div>
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <div className="space-y-3 p-4 pb-6">
+        {panels}
+      </div>
+    );
+  }
+
+  return (
+    <aside className="flex min-h-0 flex-1 flex-col">
+      <div className="shrink-0 space-y-4 border-b border-border p-4 pb-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">
+                Appearance
+              </h3>
+              <p className="text-xs text-muted-foreground">Optional styling tweaks</p>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-7 px-2 text-xs text-muted-foreground"
+            onClick={onClose}
+          >
+            <PanelRightClose className="h-3.5 w-3.5" />
+            Close
+          </Button>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-y-contain p-4 pt-3 pb-6">
+        {panels}
       </div>
     </aside>
   );
