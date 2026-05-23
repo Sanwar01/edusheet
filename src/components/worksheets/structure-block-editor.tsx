@@ -1,6 +1,6 @@
 'use client';
 
-import { Input } from '@/components/ui/input';
+import type { ReactNode } from 'react';
 import {
   Select,
   SelectContent,
@@ -8,55 +8,82 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { ImageBlockEditor } from '@/components/worksheets/image-block-editor';
-import type { WorksheetStructureBlock } from '@/types/worksheet';
+import {
+  structureBlockCalloutClass,
+  structureBlockHeadingFontSize,
+} from '@/components/worksheets/structure-block-preview';
+import { cn } from '@/lib/utils';
+import type { WorksheetStructureBlock, WorksheetTheme } from '@/types/worksheet';
+
+const inlineFieldClass =
+  'w-full border-0 bg-transparent p-0 shadow-none outline-none ring-0 focus-visible:ring-0 placeholder:text-slate-400/70';
+
+function BlockSettingsRow({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        'mt-1.5 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-1.5',
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+function SettingLabel({ children }: { children: ReactNode }) {
+  return (
+    <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+      {children}
+    </span>
+  );
+}
 
 export function StructureBlockEditor({
   block,
   onChange,
+  theme,
+  isSelected = false,
+  isGrid = false,
 }: {
   block: WorksheetStructureBlock;
   onChange: (next: WorksheetStructureBlock) => void;
+  theme: WorksheetTheme;
+  isSelected?: boolean;
+  isGrid?: boolean;
 }) {
   const baseId = `block_${block.id}`;
+  const wrap = (node: ReactNode) => (
+    <div className={cn(isGrid && 'col-span-full min-w-0', 'min-w-0')}>
+      {node}
+    </div>
+  );
 
-  return (
-    <div className="space-y-2">
-      <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
-        {block.block_type === 'heading'
-          ? 'Heading'
-          : block.block_type === 'paragraph'
-            ? 'Paragraph'
-            : block.block_type === 'divider'
-              ? 'Divider'
-              : block.block_type === 'spacer'
-                ? 'Spacer'
-                : block.block_type === 'callout'
-                  ? 'Callout'
-                  : 'Image'}
-      </span>
-
-      {block.block_type === 'heading' ? (
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="min-w-[100px] flex-1">
-            <label htmlFor={`${baseId}_text`} className="mb-1 block text-[11px] text-slate-500">
-              Text
-            </label>
-            <Input
-              id={`${baseId}_text`}
-              value={block.text}
-              onChange={(e) => onChange({ ...block, text: e.target.value })}
-              placeholder="Heading text"
-              className="border-slate-200"
-            />
-          </div>
-          <div className="w-[88px]">
-            <label htmlFor={`${baseId}_level`} className="mb-1 block text-[11px] text-slate-500">
-              Level
-            </label>
+  if (block.block_type === 'heading') {
+    const level = block.level ?? 3;
+    const size = structureBlockHeadingFontSize(theme, level);
+    return wrap(
+      <>
+        <input
+          id={`${baseId}_text`}
+          value={block.text}
+          onChange={(e) => onChange({ ...block, text: e.target.value })}
+          placeholder="Heading"
+          className={cn(inlineFieldClass, 'font-semibold')}
+          style={{ fontSize: size, color: theme.textColor }}
+        />
+        {isSelected ? (
+          <BlockSettingsRow>
+            <SettingLabel>Level</SettingLabel>
             <Select
-              value={String(block.level ?? 3)}
+              value={String(level)}
               onValueChange={(v) =>
                 onChange({
                   ...block,
@@ -64,7 +91,7 @@ export function StructureBlockEditor({
                 })
               }
             >
-              <SelectTrigger id={`${baseId}_level`} className="h-9 text-xs">
+              <SelectTrigger className="h-7 w-[72px] border-slate-200 bg-white text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -73,64 +100,100 @@ export function StructureBlockEditor({
                 <SelectItem value="4">H4</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-        </div>
-      ) : null}
+          </BlockSettingsRow>
+        ) : null}
+      </>,
+    );
+  }
 
-      {block.block_type === 'paragraph' ? (
-        <div>
-          <label htmlFor={`${baseId}_para`} className="mb-1 block text-[11px] text-slate-500">
-            Text
-          </label>
-          <Textarea
-            id={`${baseId}_para`}
+  if (block.block_type === 'paragraph') {
+    return wrap(
+      <textarea
+        id={`${baseId}_para`}
+        value={block.text}
+        onChange={(e) => onChange({ ...block, text: e.target.value })}
+        placeholder="Paragraph"
+        rows={Math.max(2, block.text.split('\n').length)}
+        className={cn(inlineFieldClass, 'resize-none leading-relaxed')}
+        style={{ color: theme.textColor, fontSize: theme.bodyFontSize }}
+      />,
+    );
+  }
+
+  if (block.block_type === 'divider') {
+    return wrap(
+      <hr
+        className="my-2 border-0 border-t-2"
+        style={{ borderColor: theme.primaryColor }}
+      />,
+    );
+  }
+
+  if (block.block_type === 'spacer') {
+    const h = block.heightPx ?? 24;
+    return wrap(
+      <>
+        <div
+          aria-hidden
+          className={cn(
+            'w-full rounded-sm',
+            isSelected && 'bg-slate-50/80 ring-1 ring-dashed ring-slate-200',
+          )}
+          style={{ height: h }}
+        />
+        {isSelected ? (
+          <BlockSettingsRow>
+            <SettingLabel>Height</SettingLabel>
+            <input
+              id={`${baseId}_sp`}
+              type="number"
+              min={8}
+              max={200}
+              step={4}
+              value={h}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                onChange({
+                  ...block,
+                  heightPx: Number.isNaN(n) ? 24 : Math.min(200, Math.max(8, n)),
+                });
+              }}
+              className="h-7 w-16 rounded-md border border-slate-200 bg-white px-2 text-xs"
+            />
+            <span className="text-[10px] text-slate-400">px</span>
+          </BlockSettingsRow>
+        ) : null}
+      </>,
+    );
+  }
+
+  if (block.block_type === 'callout') {
+    const tone = block.tone ?? 'info';
+    return wrap(
+      <>
+        <div
+          className={cn(
+            'rounded-lg border px-3 py-2 text-sm',
+            structureBlockCalloutClass[tone],
+          )}
+        >
+          <textarea
+            id={`${baseId}_co`}
             value={block.text}
             onChange={(e) => onChange({ ...block, text: e.target.value })}
-            placeholder="Paragraph text"
-            rows={4}
-            className="border-slate-200 text-sm"
+            placeholder="Callout"
+            rows={Math.max(2, block.text.split('\n').length)}
+            className={cn(
+              inlineFieldClass,
+              'resize-none leading-relaxed text-inherit',
+            )}
           />
         </div>
-      ) : null}
-
-      {block.block_type === 'divider' ? (
-        <p className="text-xs text-slate-500">
-          A horizontal rule is shown between questions. No extra settings.
-        </p>
-      ) : null}
-
-      {block.block_type === 'spacer' ? (
-        <div>
-          <label htmlFor={`${baseId}_sp`} className="mb-1 block text-[11px] text-slate-500">
-            Height (px)
-          </label>
-          <Input
-            id={`${baseId}_sp`}
-            type="number"
-            min={8}
-            max={200}
-            step={4}
-            value={block.heightPx ?? 24}
-            onChange={(e) => {
-              const n = Number(e.target.value);
-              onChange({
-                ...block,
-                heightPx: Number.isNaN(n) ? 24 : Math.min(200, Math.max(8, n)),
-              });
-            }}
-            className="max-w-[120px] border-slate-200"
-          />
-        </div>
-      ) : null}
-
-      {block.block_type === 'callout' ? (
-        <div className="space-y-2">
-          <div>
-            <label htmlFor={`${baseId}_tone`} className="mb-1 block text-[11px] text-slate-500">
-              Style
-            </label>
+        {isSelected ? (
+          <BlockSettingsRow>
+            <SettingLabel>Style</SettingLabel>
             <Select
-              value={block.tone ?? 'info'}
+              value={tone}
               onValueChange={(v) =>
                 onChange({
                   ...block,
@@ -138,7 +201,7 @@ export function StructureBlockEditor({
                 })
               }
             >
-              <SelectTrigger id={`${baseId}_tone`} className="h-9 text-xs">
+              <SelectTrigger className="h-7 w-[100px] border-slate-200 bg-white text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -147,30 +210,24 @@ export function StructureBlockEditor({
                 <SelectItem value="success">Success</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-          <div>
-            <label htmlFor={`${baseId}_co`} className="mb-1 block text-[11px] text-slate-500">
-              Message
-            </label>
-            <Textarea
-              id={`${baseId}_co`}
-              value={block.text}
-              onChange={(e) => onChange({ ...block, text: e.target.value })}
-              placeholder="Callout text"
-              rows={3}
-              className="border-slate-200 text-sm"
-            />
-          </div>
-        </div>
-      ) : null}
+          </BlockSettingsRow>
+        ) : null}
+      </>,
+    );
+  }
 
-      {block.block_type === 'image' ? (
-        <ImageBlockEditor
-          block={block}
-          baseId={baseId}
-          onChange={onChange}
-        />
-      ) : null}
-    </div>
-  );
+  if (block.block_type === 'image') {
+    return wrap(
+      <ImageBlockEditor
+        block={block}
+        baseId={baseId}
+        theme={theme}
+        variant="preview"
+        showControls={isSelected}
+        onChange={onChange}
+      />,
+    );
+  }
+
+  return null;
 }

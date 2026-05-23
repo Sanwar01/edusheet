@@ -388,7 +388,8 @@ export const EditorShell = ({
     (event: MouseEvent) => {
       if (!selectedNodeId) return;
       const target = event.target as HTMLElement;
-      if (target.closest(`[data-editor-node="${selectedNodeId}"]`)) return;
+      // Another node will handle selection on this press; avoid deselect race.
+      if (target.closest('[data-editor-node]')) return;
       setSelectedNodeId(null);
     },
     [selectedNodeId],

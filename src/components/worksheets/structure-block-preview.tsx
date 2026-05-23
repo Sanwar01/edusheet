@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import type { WorksheetStructureBlock, WorksheetTheme } from '@/types/worksheet';
 
-const calloutClass: Record<
+export const structureBlockCalloutClass: Record<
   NonNullable<Extract<WorksheetStructureBlock, { block_type: 'callout' }>['tone']>,
   string
 > = {
@@ -10,6 +10,17 @@ const calloutClass: Record<
   warning: 'border-amber-200 bg-amber-50 text-slate-900',
   success: 'border-emerald-200 bg-emerald-50 text-slate-900',
 };
+
+export function structureBlockHeadingFontSize(
+  theme: WorksheetTheme,
+  level: 2 | 3 | 4,
+): number {
+  return level === 2
+    ? Math.max(theme.headingFontSize - 4, 18)
+    : level === 3
+      ? Math.max(theme.headingFontSize - 8, 16)
+      : Math.max(theme.headingFontSize - 10, 14);
+}
 
 export function StructureBlockPreview({
   block,
@@ -26,12 +37,7 @@ export function StructureBlockPreview({
 
   if (block.block_type === 'heading') {
     const level = block.level ?? 3;
-    const size =
-      level === 2
-        ? Math.max(theme.headingFontSize - 4, 18)
-        : level === 3
-          ? Math.max(theme.headingFontSize - 8, 16)
-          : Math.max(theme.headingFontSize - 10, 14);
+    const size = structureBlockHeadingFontSize(theme, level);
     const Tag = level === 2 ? 'h3' : level === 3 ? 'h4' : 'h5';
     return wrap(
       <Tag
@@ -77,7 +83,7 @@ export function StructureBlockPreview({
       <div
         className={cn(
           'rounded-lg border px-3 py-2 text-sm',
-          calloutClass[tone],
+          structureBlockCalloutClass[tone],
         )}
       >
         {block.text.trim() || 'Callout'}

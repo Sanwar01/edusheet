@@ -15,6 +15,8 @@ type SortableShellProps = {
   isSelected?: boolean;
   onDuplicate?: () => void;
   onDelete?: () => void;
+  onSelect?: () => void;
+  variant?: 'default' | 'block';
 };
 
 export const SortableSectionShell = ({
@@ -49,8 +51,10 @@ export const SortableSectionShell = ({
       id={editorNodeId}
       data-editor-node={editorNodeId}
       className={cn(
-        'relative rounded-md border bg-white p-3 shadow-sm',
-        isSelected ? 'border-2 border-primary' : 'border-slate-200',
+        'relative rounded-md border bg-white p-3 transition-[border-color,box-shadow]',
+        isSelected
+          ? 'border-2 border-primary shadow-sm'
+          : 'border-transparent shadow-none hover:border-slate-200 hover:shadow-sm',
         shellClassName,
       )}
     >
@@ -76,6 +80,8 @@ export const SortableQuestionShell = ({
   isSelected,
   onDuplicate,
   onDelete,
+  onSelect,
+  variant = 'default',
 }: SortableShellProps) => {
   const {
     attributes,
@@ -92,6 +98,8 @@ export const SortableQuestionShell = ({
     opacity: isDragging ? 0.92 : 1,
   };
 
+  const isBlock = variant === 'block';
+
   return (
     <div
       ref={setNodeRef}
@@ -99,10 +107,21 @@ export const SortableQuestionShell = ({
       id={editorNodeId}
       data-editor-node={editorNodeId}
       className={cn(
-        'relative max-w-full rounded-md border bg-slate-50/60 p-2',
-        isSelected ? 'border-2 border-primary' : 'border-slate-100',
+        'relative max-w-full rounded-md border',
+        isBlock
+          ? 'cursor-pointer bg-white p-3 transition-[border-color,box-shadow]'
+          : 'bg-slate-50/60 p-2',
+        isSelected
+          ? 'border-2 border-primary shadow-sm'
+          : isBlock
+            ? 'border-transparent shadow-none hover:border-slate-200 hover:shadow-sm'
+            : 'border-slate-100',
         shellClassName,
       )}
+      onMouseDown={(e) => {
+        if (e.button !== 0) return;
+        onSelect?.();
+      }}
     >
       {isSelected ? (
         <EditorNodeToolbar

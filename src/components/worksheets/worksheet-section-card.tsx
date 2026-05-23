@@ -10,7 +10,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { SectionLayoutConfig, WorksheetContent } from '@/types/worksheet';
+import type {
+  SectionLayoutConfig,
+  WorksheetContent,
+  WorksheetTheme,
+} from '@/types/worksheet';
 import { SortableSectionShell } from '@/components/worksheets/sortable-blocks';
 import { SectionQuestionsDnd } from '@/components/worksheets/section-questions-dnd';
 import type { PaletteItemType } from '@/components/worksheets/editor-dnd-types';
@@ -30,6 +34,7 @@ export const WorksheetSectionCard = ({
   sectionLayout,
   onSectionLayoutChange,
   showScoring,
+  theme,
   selectedNodeId,
   onSelectNode,
 }: {
@@ -47,6 +52,7 @@ export const WorksheetSectionCard = ({
   sectionLayout: SectionLayoutConfig;
   onSectionLayoutChange: (partial: Partial<SectionLayoutConfig>) => void;
   showScoring: boolean;
+  theme: WorksheetTheme;
   selectedNodeId: string | null;
   onSelectNode: (nodeId: string) => void;
 }) => {
@@ -179,6 +185,7 @@ export const WorksheetSectionCard = ({
             showDropTargets={showDropTargets}
             sectionLayout={sectionLayout}
             showScoring={showScoring}
+            theme={theme}
             selectedNodeId={selectedNodeId}
             onSelectNode={onSelectNode}
             onChangeQuestions={(next) =>

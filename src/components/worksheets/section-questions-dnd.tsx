@@ -31,6 +31,7 @@ import type {
   WorksheetContent,
   WorksheetQuestion,
   WorksheetSectionItem,
+  WorksheetTheme,
 } from '@/types/worksheet';
 import { isWorksheetQuestion } from '@/types/worksheet';
 import { defaultSectionLayout } from '@/features/worksheets/layout';
@@ -124,6 +125,7 @@ export const SectionQuestionsDnd = ({
   showScoring = true,
   selectedNodeId,
   onSelectNode,
+  theme,
 }: {
   section: WorksheetContent['sections'][number];
   onChangeQuestions: (next: WorksheetSectionItem[]) => void;
@@ -134,6 +136,7 @@ export const SectionQuestionsDnd = ({
   showScoring?: boolean;
   selectedNodeId: string | null;
   onSelectNode: (nodeId: string) => void;
+  theme: WorksheetTheme;
 }) => {
   const [collapsedByQuestionId, setCollapsedByQuestionId] = useState<
     Record<string, boolean>
@@ -227,7 +230,7 @@ export const SectionQuestionsDnd = ({
                         isGrid && 'col-span-full min-w-0',
                         isGrid &&
                           sectionLayout.border === 'cells' &&
-                          'rounded-md border border-slate-200 bg-slate-50 p-2',
+                          'rounded-md border border-slate-200 bg-white p-3',
                       )}
                     >
                       {showDropTargets ? (
@@ -247,8 +250,10 @@ export const SectionQuestionsDnd = ({
                       ) : null}
                       <SortableQuestionShell
                         id={item.id}
+                        variant="block"
                         editorNodeId={`block_${item.id}`}
                         isSelected={selectedNodeId === `block_${item.id}`}
+                        onSelect={() => onSelectNode(`block_${item.id}`)}
                         onDuplicate={() =>
                           onChangeQuestions([
                             ...section.questions.slice(0, index + 1),
@@ -268,32 +273,19 @@ export const SectionQuestionsDnd = ({
                           index,
                         }}
                       >
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelectNode(`block_${item.id}`);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              onSelectNode(`block_${item.id}`);
-                            }
-                          }}
-                          role="button"
-                          tabIndex={0}
-                          className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                        >
-                          <StructureBlockEditor
-                            block={item}
-                            onChange={(next) =>
-                              onChangeQuestions(
-                                section.questions.map((row, i) =>
-                                  i === index ? next : row,
-                                ),
-                              )
-                            }
-                          />
-                        </div>
+                        <StructureBlockEditor
+                          block={item}
+                          theme={theme}
+                          isGrid={isGrid}
+                          isSelected={selectedNodeId === `block_${item.id}`}
+                          onChange={(next) =>
+                            onChangeQuestions(
+                              section.questions.map((row, i) =>
+                                i === index ? next : row,
+                              ),
+                            )
+                          }
+                        />
                       </SortableQuestionShell>
                     </div>
                   );

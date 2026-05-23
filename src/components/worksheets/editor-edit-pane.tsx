@@ -344,6 +344,7 @@ export function EditorEditPane({
                           commands.addQuestionToSection(section.id)
                         }
                         showScoring={model.showScoring}
+                        theme={model.theme}
                         selectedNodeId={model.selectedNodeId}
                         onSelectNode={model.onSelectNode}
                       />
