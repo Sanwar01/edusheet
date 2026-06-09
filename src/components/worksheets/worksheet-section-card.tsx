@@ -2,7 +2,11 @@
 
 import { CirclePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { SectionLayoutConfig, WorksheetContent, WorksheetTheme } from '@/types/worksheet';
+import type {
+  SectionLayoutConfig,
+  WorksheetContent,
+  WorksheetTheme,
+} from '@/types/worksheet';
 import { SortableSectionShell } from '@/components/worksheets/sortable-blocks';
 import { SectionQuestionsDnd } from '@/components/worksheets/section-questions-dnd';
 import type { PaletteItemType } from '@/components/worksheets/editor-dnd-types';
@@ -14,7 +18,6 @@ export const WorksheetSectionCard = ({
   section,
   sectionNumber,
   questionStartNumber,
-  sectionPoints: _sectionPoints,
   isCollapsed,
   onChangeSection,
   onDuplicateSection,
@@ -23,7 +26,6 @@ export const WorksheetSectionCard = ({
   onDropPaletteItem,
   showDropTargets,
   sectionLayout,
-  onSectionLayoutChange: _onSectionLayoutChange,
   showScoring,
   theme,
   selectedNodeId,
@@ -74,7 +76,10 @@ export const WorksheetSectionCard = ({
           value={section.heading}
           placeholder="New Section"
           className={inlineHeadingClass}
-          style={{ color: theme.primaryColor, fontSize: theme.headingFontSize - 6 }}
+          style={{
+            color: theme.primaryColor,
+            fontSize: theme.headingFontSize - 6,
+          }}
           onMouseDown={(e) => {
             e.stopPropagation();
             onSelectNode(sectionNodeId);

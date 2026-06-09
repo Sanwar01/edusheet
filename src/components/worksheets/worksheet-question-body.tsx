@@ -40,13 +40,10 @@ export function WorksheetQuestionBody({
       );
     }
     return (
-      <ul className="mt-2 list-none space-y-1 pl-0 text-sm" style={optMuted}>
+      <ul className="mt-2 list-none space-y-3 pl-0 text-sm" style={optMuted}>
         {options.map((option, optionIndex) => (
           <li key={`${question.id}_opt_${optionIndex}`}>
-            <span
-              className="font-medium"
-              style={{ color: theme.primaryColor }}
-            >
+            <span className="font-medium" style={{ color: theme.primaryColor }}>
               {String.fromCharCode(65 + optionIndex)})
             </span>{' '}
             {option || `Option ${String.fromCharCode(65 + optionIndex)}`}

@@ -404,7 +404,11 @@ export const EditorShell = ({
   useEffect(() => {
     if (!selectedNodeId) return;
     const selection = resolveEditorSelection(content, selectedNodeId);
-    if (selection.type === 'none') setSelectedNodeId(null);
+    if (selection.type === 'none') {
+      setTimeout(() => {
+        setSelectedNodeId(null);
+      }, 0);
+    }
   }, [content, selectedNodeId]);
 
   const selectNode = useCallback(
