@@ -26,7 +26,9 @@ import type {
   WorksheetStructureBlock,
   WorksheetTheme,
 } from '@/types/worksheet';
-import { isStructureBlock } from '@/types/worksheet';
+import { resolveAnswerLineWidth } from '@/features/worksheets/answer-line-width';
+import type { AnswerLineWidth } from '@/types/worksheet';
+import { isStructureBlock, isWorksheetQuestion } from '@/types/worksheet';
 
 export function EditorAppearancePanel({
   theme,
@@ -62,6 +64,19 @@ export function EditorAppearancePanel({
       ...section,
       questions: section.questions.map((row) =>
         row.id === blockId && isStructureBlock(row) ? next : row,
+      ),
+    }));
+  };
+
+  const updateQuestion = (
+    sectionId: string,
+    questionId: string,
+    next: WorksheetQuestion,
+  ) => {
+    onUpdateSection(sectionId, (section) => ({
+      ...section,
+      questions: section.questions.map((row) =>
+        row.id === questionId && isWorksheetQuestion(row) ? next : row,
       ),
     }));
   };
@@ -108,6 +123,9 @@ export function EditorAppearancePanel({
           question={selection.question}
           theme={theme}
           setTheme={setTheme}
+          onChange={(next) =>
+            updateQuestion(selection.sectionId, selection.question.id, next)
+          }
         />
       ) : null}
 
@@ -127,11 +145,45 @@ function QuestionLayoutControls({
   question,
   theme,
   setTheme,
+  onChange,
 }: {
   question: WorksheetQuestion;
   theme: WorksheetTheme;
   setTheme: Dispatch<SetStateAction<WorksheetTheme>>;
+  onChange: (next: WorksheetQuestion) => void;
 }) {
+  if (question.question_type === 'short_answer') {
+    return (
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-muted-foreground">
+          Answer line width
+        </label>
+        <p className="text-xs text-muted-foreground">
+          How wide the writing line appears in preview and export.
+        </p>
+        <Select
+          value={resolveAnswerLineWidth(question)}
+          onValueChange={(value) =>
+            onChange({
+              ...question,
+              answerLineWidth: value as AnswerLineWidth,
+            })
+          }
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="short">Short</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="long">Long</SelectItem>
+            <SelectItem value="full">Full width</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  }
+
   if (
     question.question_type !== 'multiple_choice' &&
     question.question_type !== 'true_false'

@@ -16,6 +16,10 @@ import {
   buildWorksheetLayout,
   defaultSectionLayout,
 } from '@/features/worksheets/layout';
+import {
+  answerLineWidthCss,
+  resolveAnswerLineWidth,
+} from '@/features/worksheets/answer-line-width';
 import { defaultTheme } from '@/features/worksheets/defaults';
 import {
   LayoutSchema,
@@ -122,9 +126,14 @@ function renderQuestionHtml(
     matchingHtml += '</ul>';
   }
 
-  const textAnswerHtml =
-    q.question_type === 'short_answer' || q.question_type === 'essay'
-      ? `<div class="boxed-answer ${q.question_type === 'essay' ? 'essay' : 'short'}" style="border-color:${optColor}"></div>`
+  const shortAnswerHtml =
+    q.question_type === 'short_answer'
+      ? `<div class="line-answer line-answer-short" style="border-color:${optColor};width:${answerLineWidthCss(resolveAnswerLineWidth(q))}"></div>`
+      : '';
+
+  const essayHtml =
+    q.question_type === 'essay'
+      ? `<div class="boxed-answer essay" style="border-color:${optColor}"></div>`
       : '';
 
   const answerKeyHtml =
@@ -141,7 +150,8 @@ function renderQuestionHtml(
       ${tfHtml}
       ${matchingHtml}
       ${fillBlankHtml}
-      ${textAnswerHtml}
+      ${shortAnswerHtml}
+      ${essayHtml}
       ${answerKeyHtml}
     </div>
   `;
@@ -349,9 +359,9 @@ function buildPrintableHtml({
       .tf-box { display: inline-block; width: 14px; height: 14px; border: 1px solid; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
       .section-points { font-size: 12px; font-weight: 500; }
       .answer-key { margin-top: 6px; font-size: 12px; color: #374151; background: #f1f5f9; border-radius: 4px; padding: 4px 8px; }
-      .line-answer { border-bottom: 1px solid #999; width: 200px; height: 20px; margin-top: 4px; }
+      .line-answer { border-bottom: 1px solid; width: 200px; height: 20px; margin-top: 4px; }
+      .line-answer-short { height: 24px; margin-top: 8px; }
       .boxed-answer { border: 1px solid #ddd; margin-top: 4px; border-radius: 4px; }
-      .boxed-answer.short { height: 30px; }
       .boxed-answer.essay { height: 80px; }
       @media print { body { padding: 20px; } }
     </style>

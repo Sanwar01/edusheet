@@ -6,6 +6,9 @@ export type QuestionType =
   | 'matching'
   | 'essay';
 
+/** Width of the student answer line for short-answer questions. */
+export type AnswerLineWidth = 'short' | 'medium' | 'long' | 'full';
+
 export interface Worksheet {
   id: string;
   user_id: string;
@@ -27,6 +30,8 @@ export interface WorksheetQuestion {
   options?: string[];
   answer?: string;
   points?: number;
+  /** Short-answer underline width. Defaults to full width. */
+  answerLineWidth?: AnswerLineWidth;
 }
 
 /** Rich content inside a section (shown between questions). */

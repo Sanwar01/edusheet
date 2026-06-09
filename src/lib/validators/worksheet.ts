@@ -15,6 +15,9 @@ export const QuestionSchema = z
     options: z.array(z.string()).optional().default([]),
     answer: z.string().optional(),
     points: z.number().int().min(1, 'Points must be at least 1').optional(),
+    answerLineWidth: z
+      .enum(['short', 'medium', 'long', 'full'])
+      .optional(),
   })
   .superRefine((question, ctx) => {
     if (question.question_type === 'multiple_choice') {

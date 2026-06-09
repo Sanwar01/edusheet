@@ -1,6 +1,11 @@
 'use client';
 
+import {
+  answerLineWidthClass,
+  resolveAnswerLineWidth,
+} from '@/features/worksheets/answer-line-width';
 import type { WorksheetQuestion, WorksheetTheme } from '@/types/worksheet';
+import { cn } from '@/lib/utils';
 
 /** Shared answer / option chrome used by preview and editor canvas. */
 export function WorksheetQuestionBody({
@@ -111,15 +116,23 @@ export function WorksheetQuestionBody({
     );
   }
 
-  if (
-    question.question_type === 'short_answer' ||
-    question.question_type === 'essay'
-  ) {
+  if (question.question_type === 'short_answer') {
+    const lineWidth = resolveAnswerLineWidth(question);
     return (
       <div
-        className={`mt-3 w-full rounded border bg-white ${
-          question.question_type === 'essay' ? 'min-h-[80px]' : 'min-h-[36px]'
-        }`}
+        className={cn(
+          'mt-3 h-6 border-b',
+          answerLineWidthClass(lineWidth),
+        )}
+        style={{ borderColor: theme.answerTextColor }}
+      />
+    );
+  }
+
+  if (question.question_type === 'essay') {
+    return (
+      <div
+        className="mt-3 min-h-[80px] w-full rounded border bg-white"
         style={{ borderColor: theme.answerTextColor }}
       />
     );
