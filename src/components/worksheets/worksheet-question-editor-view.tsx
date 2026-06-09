@@ -35,7 +35,11 @@ export function WorksheetQuestionEditorView({
         <textarea
           value={question.prompt}
           onChange={(e) => onPromptChange(e.target.value)}
-          placeholder="New question"
+          placeholder={
+            question.question_type === 'fill_in_blank'
+              ? 'There are ___________________ months.'
+              : 'New question'
+          }
           rows={Math.max(1, Math.min(4, question.prompt.split('\n').length))}
           className={cn(inlinePromptClass, 'resize-none leading-snug')}
           style={{

@@ -46,6 +46,13 @@ export function buildQuestionTemplate(questionType: QuestionType) {
       options: ['Pair 1', 'Pair 2', 'Pair 3'],
     };
   }
+  if (questionType === 'fill_in_blank') {
+    return {
+      ...base,
+      prompt: 'There are ___________________ months.',
+      answer: 'twelve',
+    };
+  }
   return base;
 }
 

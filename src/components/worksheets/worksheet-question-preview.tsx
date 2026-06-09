@@ -1,4 +1,5 @@
 import type { WorksheetQuestion, WorksheetTheme } from '@/types/worksheet';
+import { FillInBlankPromptContent } from '@/components/worksheets/fill-in-blank-prompt';
 import { WorksheetQuestionBody } from '@/components/worksheets/worksheet-question-body';
 import { promptFontWeightClassMap } from '@/features/worksheets/editor/theme/class-maps';
 
@@ -21,7 +22,11 @@ export function WorksheetQuestionPreview({
     <div className="min-h-0 wrap-break-word">
       <p className={`${promptWeight}`} style={{ color: theme.textColor }}>
         <span style={{ color: theme.primaryColor }}>{index}.</span>{' '}
-        {question.prompt || 'Untitled question'}
+        {question.question_type === 'fill_in_blank' ? (
+          <FillInBlankPromptContent prompt={question.prompt} theme={theme} />
+        ) : (
+          question.prompt || 'Untitled question'
+        )}
       </p>
       <WorksheetQuestionBody
         question={question}

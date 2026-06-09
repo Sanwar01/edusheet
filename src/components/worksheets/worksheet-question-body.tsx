@@ -108,12 +108,7 @@ export function WorksheetQuestionBody({
   }
 
   if (question.question_type === 'fill_in_blank') {
-    return (
-      <div
-        className="mt-2 h-6 w-52 border-b"
-        style={{ borderColor: theme.answerTextColor }}
-      />
-    );
+    return null;
   }
 
   if (question.question_type === 'short_answer') {

@@ -115,9 +115,20 @@ export function QuestionInspector({
           id={`${baseId}_prompt`}
           value={question.prompt}
           onChange={(e) => onChange({ ...question, prompt: e.target.value })}
-          placeholder="Question prompt"
+          placeholder={
+            question.question_type === 'fill_in_blank'
+              ? 'There are ___________________ months.'
+              : 'Question prompt'
+          }
           rows={3}
         />
+        {question.question_type === 'fill_in_blank' ? (
+          <p className="text-xs text-muted-foreground">
+            Use three or more underscores (
+            <span className="font-mono">___</span>) where students should write
+            their answer.
+          </p>
+        ) : null}
       </Field>
 
       {showScoring ? (

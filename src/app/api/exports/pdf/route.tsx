@@ -20,6 +20,7 @@ import {
   answerLineWidthCss,
   resolveAnswerLineWidth,
 } from '@/features/worksheets/answer-line-width';
+import { renderFillInBlankPromptHtml } from '@/features/worksheets/fill-in-blank-prompt';
 import { defaultTheme } from '@/features/worksheets/defaults';
 import {
   LayoutSchema,
@@ -78,10 +79,13 @@ function renderQuestionHtml(
   theme: WorksheetTheme,
   includeAnswerKey: boolean,
 ) {
-  const safePrompt = escapeHtml(q.prompt || '');
+  const optColor = theme.answerTextColor;
+  const safePrompt =
+    q.question_type === 'fill_in_blank'
+      ? renderFillInBlankPromptHtml(q.prompt || '', optColor, escapeHtml)
+      : escapeHtml(q.prompt || '');
   const horizontal = theme.optionLayout === 'horizontal';
   const opts = q.options ?? [];
-  const optColor = theme.answerTextColor;
 
   let mcHtml = '';
   if (q.question_type === 'multiple_choice' && opts.length > 0) {
@@ -110,11 +114,6 @@ function renderQuestionHtml(
             <span class="tf-box" style="border-color:${optColor}"></span><span style="color:${optColor}">False</span>
           </div>`
         : `<div class="options"><div class="option" style="color:${optColor}">○ True</div><div class="option" style="color:${optColor}">○ False</div></div>`
-      : '';
-
-  const fillBlankHtml =
-    q.question_type === 'fill_in_blank'
-      ? `<div class="line-answer" style="border-color:${optColor}"></div>`
       : '';
 
   let matchingHtml = '';
@@ -149,7 +148,6 @@ function renderQuestionHtml(
       ${mcHtml}
       ${tfHtml}
       ${matchingHtml}
-      ${fillBlankHtml}
       ${shortAnswerHtml}
       ${essayHtml}
       ${answerKeyHtml}
@@ -359,6 +357,7 @@ function buildPrintableHtml({
       .tf-box { display: inline-block; width: 14px; height: 14px; border: 1px solid; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
       .section-points { font-size: 12px; font-weight: 500; }
       .answer-key { margin-top: 6px; font-size: 12px; color: #374151; background: #f1f5f9; border-radius: 4px; padding: 4px 8px; }
+      .fill-blank-inline { display: inline-block; vertical-align: baseline; border-bottom: 1px solid; height: 1.1em; margin: 0 2px; }
       .line-answer { border-bottom: 1px solid; width: 200px; height: 20px; margin-top: 4px; }
       .line-answer-short { height: 24px; margin-top: 8px; }
       .boxed-answer { border: 1px solid #ddd; margin-top: 4px; border-radius: 4px; }
