@@ -7,7 +7,10 @@ import type {
   WorksheetStructureBlock,
 } from '@/types/worksheet';
 import { isWorksheetQuestion } from '@/types/worksheet';
-import type { PaletteItemType, StructurePaletteType } from '@/components/worksheets/editor-dnd-types';
+import type {
+  PaletteItemType,
+  StructurePaletteType,
+} from '@/components/worksheets/editor-dnd-types';
 import { isStructurePaletteType } from '@/components/worksheets/editor-dnd-types';
 
 function clampIndex(index: number, length: number): number {
@@ -17,7 +20,7 @@ function clampIndex(index: number, length: number): number {
 export function buildQuestionTemplate(questionType: QuestionType) {
   const base = {
     id: newId('q'),
-    prompt: 'New question prompt',
+    prompt: 'New question',
     question_type: questionType,
     points: 1,
     answer: '',

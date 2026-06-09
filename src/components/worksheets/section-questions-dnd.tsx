@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   DndContext,
   PointerSensor,
@@ -15,22 +15,12 @@ import {
   rectSortingStrategy,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import type {
-  QuestionType,
   SectionLayoutConfig,
   WorksheetContent,
   WorksheetQuestion,
   WorksheetSectionItem,
+  WorksheetStructureBlock,
   WorksheetTheme,
 } from '@/types/worksheet';
 import { isWorksheetQuestion } from '@/types/worksheet';
@@ -39,6 +29,7 @@ import { sectionQuestionGridColsClass } from '@/features/worksheets/section-grid
 import { cn } from '@/lib/utils';
 import { SortableQuestionShell } from '@/components/worksheets/sortable-blocks';
 import { StructureBlockEditor } from '@/components/worksheets/structure-block-editor';
+import { WorksheetQuestionEditorView } from '@/components/worksheets/worksheet-question-editor-view';
 import { duplicateQuestion } from '@/components/worksheets/editor-shell.helpers';
 import {
   isPaletteItemType,
@@ -46,64 +37,17 @@ import {
   type PaletteItemType,
 } from '@/components/worksheets/editor-dnd-types';
 
-const QUESTION_TYPE_OPTIONS: { value: QuestionType; label: string }[] = [
-  { value: 'short_answer', label: 'Short answer' },
-  { value: 'multiple_choice', label: 'Multiple choice' },
-  { value: 'true_false', label: 'True / False' },
-  { value: 'fill_in_blank', label: 'Fill in the blank' },
-  { value: 'matching', label: 'Matching' },
-  { value: 'essay', label: 'Essay' },
-];
-
-const TRUE_FALSE_OPTIONS = ['True', 'False'] as const;
-
-const questionTypeLabelMap: Record<QuestionType, string> = {
-  short_answer: 'Short answer',
-  multiple_choice: 'Multiple choice',
-  true_false: 'True / False',
-  fill_in_blank: 'Fill in the blank',
-  matching: 'Matching',
-  essay: 'Essay',
-};
-
-const buildQuestionByType = (
-  current: WorksheetQuestion,
-  question_type: QuestionType,
-): WorksheetQuestion => {
-  const base: WorksheetQuestion = {
-    id: current.id,
-    question_type,
-    prompt: current.prompt,
-    points: current.points ?? 1,
-    answer: current.answer ?? '',
+function blockToolbarLabel(block: WorksheetStructureBlock): string {
+  const labels: Record<WorksheetStructureBlock['block_type'], string> = {
+    heading: 'H',
+    paragraph: 'P',
+    divider: '—',
+    spacer: 'Sp',
+    callout: 'C',
+    image: 'Img',
   };
-
-  if (question_type === 'multiple_choice') {
-    return {
-      ...base,
-      options: ['Option 1', 'Option 2', 'Option 3', 'Option 4'],
-      answer: 'Option 1',
-    };
-  }
-
-  if (question_type === 'true_false') {
-    return { ...base, options: [...TRUE_FALSE_OPTIONS], answer: 'True' };
-  }
-
-  if (question_type === 'matching') {
-    return { ...base, options: ['Pair 1', 'Pair 2', 'Pair 3'] };
-  }
-
-  if (question_type === 'fill_in_blank') {
-    return { ...base, options: undefined };
-  }
-
-  if (question_type === 'essay' || question_type === 'short_answer') {
-    return { ...base, options: undefined };
-  }
-
-  return base;
-};
+  return labels[block.block_type];
+}
 
 function replaceQuestionInSectionItems(
   items: WorksheetSectionItem[],
@@ -122,7 +66,7 @@ export const SectionQuestionsDnd = ({
   onDropPaletteItem,
   showDropTargets,
   sectionLayout = defaultSectionLayout(),
-  showScoring = true,
+  showScoring: _showScoring,
   selectedNodeId,
   onSelectNode,
   theme,
@@ -138,9 +82,6 @@ export const SectionQuestionsDnd = ({
   onSelectNode: (nodeId: string) => void;
   theme: WorksheetTheme;
 }) => {
-  const [collapsedByQuestionId, setCollapsedByQuestionId] = useState<
-    Record<string, boolean>
-  >({});
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
@@ -251,6 +192,8 @@ export const SectionQuestionsDnd = ({
                       <SortableQuestionShell
                         id={item.id}
                         variant="block"
+                        theme={theme}
+                        toolbarLabel={blockToolbarLabel(item)}
                         editorNodeId={`block_${item.id}`}
                         isSelected={selectedNodeId === `block_${item.id}`}
                         onSelect={() => onSelectNode(`block_${item.id}`)}
@@ -290,389 +233,79 @@ export const SectionQuestionsDnd = ({
                     </div>
                   );
                 }
+
                 const question = item;
                 const qOrdinal =
                   questionOrdinalById.get(question.id) ?? questionStartNumber;
-                return (
-                <div
-                  key={question.id}
-                  className={cn(
-                    'space-y-2',
-                    isGrid && 'min-w-0',
-                    isGrid &&
-                      sectionLayout.border === 'cells' &&
-                      'rounded-md border border-slate-200 bg-slate-50 p-2',
-                  )}
-                >
-                  {showDropTargets ? (
-                    <div
-                      onDragOver={(event) => event.preventDefault()}
-                      onDrop={(event) => {
-                        const rawType =
-                          event.dataTransfer.getData(PALETTE_DRAG_MIME);
-                        if (!rawType || !isPaletteItemType(rawType)) return;
-                        if (rawType === 'section') return;
-                        onDropPaletteItem(rawType, index);
-                      }}
-                      className="rounded border border-dashed border-indigo-300 bg-indigo-50/60 px-2 py-1 text-[11px] text-slate-600 transition-colors hover:border-indigo-500 hover:bg-indigo-100/70"
-                    >
-                      Drop here (insert before question {qOrdinal})
-                    </div>
-                  ) : null}
-                  <SortableQuestionShell
-                    id={question.id}
-                    editorNodeId={`question_${question.id}`}
-                    isSelected={selectedNodeId === `question_${question.id}`}
-                    onDuplicate={() =>
-                      onChangeQuestions([
-                        ...section.questions,
-                        duplicateQuestion(question),
-                      ])
-                    }
-                    onDelete={() =>
-                      onChangeQuestions(
-                        section.questions.filter((q) => q.id !== question.id),
-                      )
-                    }
-                    sortData={{
-                      kind: 'question',
-                      questionId: question.id,
-                      sectionId: section.id,
-                      index,
-                    }}
-                  >
-                    <div
-                      className={cn(
-                        'mb-1 min-w-0 cursor-pointer rounded-md',
-                        isGrid
-                          ? 'flex flex-col gap-2'
-                          : 'flex flex-row items-center justify-between gap-2',
-                      )}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelectNode(`question_${question.id}`);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          onSelectNode(`question_${question.id}`);
-                        }
-                      }}
-                      role="button"
-                      tabIndex={0}
-                    >
-                      <p
-                        className={cn(
-                          'text-xs font-medium text-slate-500',
-                          !isGrid && 'shrink-0',
-                        )}
-                      >
-                        Question {qOrdinal}
-                      </p>
-                      <div
-                        className={cn(
-                          'flex min-w-0 flex-wrap items-center gap-2',
-                          !isGrid && 'justify-end',
-                          isGrid && 'w-full',
-                        )}
-                      >
-                        <Select
-                          value={question.question_type}
-                          onValueChange={(nextType) =>
-                            onChangeQuestions(
-                              replaceQuestionInSectionItems(
-                                section.questions,
-                                question.id,
-                                (q) =>
-                                  buildQuestionByType(
-                                    q,
-                                    nextType as QuestionType,
-                                  ),
-                              ),
-                            )
-                          }
-                        >
-                          <SelectTrigger
-                            className={cn(
-                              'h-7 bg-slate-100 text-xs',
-                              isGrid ? 'min-w-0 w-full' : 'w-[150px]',
-                            )}
-                          >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {QUESTION_TYPE_OPTIONS.map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {showScoring ? (
-                        <div className="flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                          <span>Pts</span>
-                          <input
-                            type="number"
-                            min={1}
-                            step={1}
-                            value={question.points ?? 1}
-                            onChange={(e) =>
-                              onChangeQuestions(
-                                replaceQuestionInSectionItems(
-                                  section.questions,
-                                  question.id,
-                                  (q) => ({
-                                    ...q,
-                                    points: Number.isNaN(
-                                      Number(e.target.value),
-                                    )
-                                      ? 1
-                                      : Math.max(1, Number(e.target.value)),
-                                  }),
-                                ),
-                              )
-                            }
-                            className="h-5 w-12 rounded border border-slate-300 bg-white px-1 text-right text-xs outline-none"
-                          />
-                        </div>
-                        ) : null}
-                      </div>
-                    </div>
 
-                    <Textarea
-                      value={question.prompt}
-                      placeholder="Type the question prompt here"
-                      className="w-full border-slate-200 bg-white font-semibold rounded-md p-2"
-                      onChange={(e) =>
+                return (
+                  <div
+                    key={question.id}
+                    className={cn(
+                      'space-y-2',
+                      isGrid && 'min-w-0',
+                      isGrid &&
+                        sectionLayout.border === 'cells' &&
+                        'rounded-md border border-slate-200 bg-white p-3',
+                    )}
+                  >
+                    {showDropTargets ? (
+                      <div
+                        onDragOver={(event) => event.preventDefault()}
+                        onDrop={(event) => {
+                          const rawType =
+                            event.dataTransfer.getData(PALETTE_DRAG_MIME);
+                          if (!rawType || !isPaletteItemType(rawType)) return;
+                          if (rawType === 'section') return;
+                          onDropPaletteItem(rawType, index);
+                        }}
+                        className="rounded border border-dashed border-indigo-300 bg-indigo-50/60 px-2 py-1 text-[11px] text-slate-600 transition-colors hover:border-indigo-500 hover:bg-indigo-100/70"
+                      >
+                        Drop here (insert before question {qOrdinal})
+                      </div>
+                    ) : null}
+                    <SortableQuestionShell
+                      id={question.id}
+                      theme={theme}
+                      toolbarLabel={`Q${qOrdinal}`}
+                      editorNodeId={`question_${question.id}`}
+                      isSelected={selectedNodeId === `question_${question.id}`}
+                      onSelect={() => onSelectNode(`question_${question.id}`)}
+                      onDuplicate={() =>
+                        onChangeQuestions([
+                          ...section.questions,
+                          duplicateQuestion(question),
+                        ])
+                      }
+                      onDelete={() =>
                         onChangeQuestions(
-                          replaceQuestionInSectionItems(
-                            section.questions,
-                            question.id,
-                            (q) => ({ ...q, prompt: e.target.value }),
-                          ),
+                          section.questions.filter((q) => q.id !== question.id),
                         )
                       }
-                    />
-                    {collapsedByQuestionId[question.id] ? (
-                      <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                        <span className="rounded-full bg-white px-2 py-1">
-                          Type: {questionTypeLabelMap[question.question_type]}
-                        </span>
-                        {showScoring ? (
-                        <span className="rounded-full bg-white px-2 py-1">
-                          Points: {question.points ?? 1}
-                        </span>
-                        ) : null}
-                        <span className="rounded-full bg-white px-2 py-1">
-                          Answer: {question.answer?.trim() ? 'Set' : 'Not set'}
-                        </span>
-                      </div>
-                    ) : (
-                      <>
-                        {(question.question_type === 'multiple_choice' ||
-                          question.question_type === 'matching') && (
-                          <div className="mt-2 space-y-1.5">
-                            {(question.options ?? []).map(
-                              (option, optionIndex) => (
-                                <div
-                                  key={`${question.id}_opt_${optionIndex}`}
-                                  className="flex min-w-0 flex-wrap items-center gap-2"
-                                >
-                                  <span className="shrink-0 text-xs text-slate-500">
-                                    {String.fromCharCode(65 + optionIndex)}.
-                                  </span>
-                                  <input
-                                    value={option}
-                                    onChange={(e) =>
-                                      onChangeQuestions(
-                                        replaceQuestionInSectionItems(
-                                          section.questions,
-                                          question.id,
-                                          (q) => {
-                                            const nextOptions = [
-                                              ...(q.options ?? []),
-                                            ];
-                                            nextOptions[optionIndex] =
-                                              e.target.value;
-                                            return {
-                                              ...q,
-                                              options: nextOptions,
-                                            };
-                                          },
-                                        ),
-                                      )
-                                    }
-                                    placeholder={`Option ${optionIndex + 1}`}
-                                    className="h-8 min-w-0 flex-1 basis-32 rounded-md border border-slate-200 bg-white px-2 text-sm outline-none focus:border-slate-300"
-                                  />
-                                  {question.question_type ===
-                                    'multiple_choice' && (
-                                    <Button
-                                      type="button"
-                                      variant={
-                                        question.answer === option
-                                          ? 'default'
-                                          : 'outline'
-                                      }
-                                      className="h-8 shrink-0 text-xs"
-                                      onClick={() =>
-                                        onChangeQuestions(
-                                          replaceQuestionInSectionItems(
-                                            section.questions,
-                                            question.id,
-                                            (q) => ({ ...q, answer: option }),
-                                          ),
-                                        )
-                                      }
-                                    >
-                                      Correct
-                                    </Button>
-                                  )}
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    className="h-8 shrink-0 px-2 text-xs text-rose-600 hover:text-rose-700"
-                                    disabled={
-                                      question.question_type ===
-                                        'multiple_choice' &&
-                                      (question.options?.length ?? 0) <= 2
-                                    }
-                                    onClick={() =>
-                                      onChangeQuestions(
-                                        replaceQuestionInSectionItems(
-                                          section.questions,
-                                          question.id,
-                                          (q) => {
-                                            const nextOptions = [
-                                              ...(q.options ?? []),
-                                            ].filter((_, i) => i !== optionIndex);
-                                            const nextAnswer =
-                                              q.answer === option
-                                                ? (nextOptions[0] ?? '')
-                                                : q.answer;
-                                            return {
-                                              ...q,
-                                              options: nextOptions,
-                                              answer: nextAnswer,
-                                            };
-                                          },
-                                        ),
-                                      )
-                                    }
-                                  >
-                                    Remove
-                                  </Button>
-                                </div>
-                              ),
-                            )}
-                            <Button
-                              variant="ghost"
-                              className="h-8 px-2 text-xs text-slate-600"
-                              onClick={() =>
-                                onChangeQuestions(
-                                  replaceQuestionInSectionItems(
-                                    section.questions,
-                                    question.id,
-                                    (q) => ({
-                                      ...q,
-                                      options: [
-                                        ...(q.options ?? []),
-                                        `Option ${(q.options?.length ?? 0) + 1}`,
-                                      ],
-                                    }),
-                                  ),
-                                )
-                              }
-                            >
-                              Add option
-                            </Button>
-                            {question.question_type === 'multiple_choice' && (
-                              <p className="text-xs text-slate-500">
-                                Multiple choice requires at least 2 options and
-                                one correct answer.
-                              </p>
-                            )}
-                          </div>
-                        )}
-                        {question.question_type === 'true_false' ? (
-                          <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
-                            <p className="mb-1 text-xs font-medium text-slate-500">
-                              Correct answer
-                            </p>
-                            <div className="flex gap-2">
-                              {TRUE_FALSE_OPTIONS.map((value) => (
-                                <Button
-                                  key={value}
-                                  type="button"
-                                  variant={
-                                    question.answer === value
-                                      ? 'default'
-                                      : 'outline'
-                                  }
-                                  className="h-8 text-xs"
-                                  onClick={() =>
-                                    onChangeQuestions(
-                                      replaceQuestionInSectionItems(
-                                        section.questions,
-                                        question.id,
-                                        (q) => ({ ...q, answer: value }),
-                                      ),
-                                    )
-                                  }
-                                >
-                                  {value}
-                                </Button>
-                              ))}
-                            </div>
-                          </div>
-                        ) : question.question_type === 'short_answer' ? (
-                          <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
-                            <p className="mb-1 text-xs font-medium text-slate-500">
-                              Expected answer (optional)
-                            </p>
-                            <Input
-                              value={question.answer ?? ''}
-                              placeholder="Optional teacher answer"
-                              className="w-full border-slate-200 bg-white"
-                              onChange={(e) =>
-                                onChangeQuestions(
-                                  replaceQuestionInSectionItems(
-                                    section.questions,
-                                    question.id,
-                                    (q) => ({ ...q, answer: e.target.value }),
-                                  ),
-                                )
-                              }
-                            />
-                          </div>
-                        ) : (
-                          <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 p-2">
-                            <p className="mb-1 text-xs font-medium text-slate-500">
-                              Answer
-                            </p>
-                            <Textarea
-                              value={question.answer ?? ''}
-                              placeholder="Type the expected answer"
-                              className="w-full h-full border-slate-200 bg-white"
-                              onChange={(e) =>
-                                onChangeQuestions(
-                                  replaceQuestionInSectionItems(
-                                    section.questions,
-                                    question.id,
-                                    (q) => ({ ...q, answer: e.target.value }),
-                                  ),
-                                )
-                              }
-                            />
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </SortableQuestionShell>
-                </div>
+                      sortData={{
+                        kind: 'question',
+                        questionId: question.id,
+                        sectionId: section.id,
+                        index,
+                      }}
+                    >
+                      <WorksheetQuestionEditorView
+                        question={question}
+                        index={qOrdinal}
+                        theme={theme}
+                        optionLayout={theme.optionLayout}
+                        onPromptChange={(prompt) =>
+                          onChangeQuestions(
+                            replaceQuestionInSectionItems(
+                              section.questions,
+                              question.id,
+                              (q) => ({ ...q, prompt }),
+                            ),
+                          )
+                        }
+                      />
+                    </SortableQuestionShell>
+                  </div>
                 );
               })}
             </div>

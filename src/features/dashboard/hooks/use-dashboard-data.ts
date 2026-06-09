@@ -16,7 +16,7 @@ type UseDashboardDataResult = {
 };
 
 export function useDashboardData(): UseDashboardDataResult {
-  const pageSize = 10;
+  const pageSize = 5;
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,8 +34,8 @@ export function useDashboardData(): UseDashboardDataResult {
         const response = await fetch(
           `/api/dashboard?page=${currentPage}&pageSize=${pageSize}`,
           {
-          method: 'GET',
-          cache: 'no-store',
+            method: 'GET',
+            cache: 'no-store',
           },
         );
 

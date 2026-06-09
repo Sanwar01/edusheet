@@ -11,28 +11,41 @@ export function EditorNodeToolbar({
   dragListeners,
   onDuplicate,
   onDelete,
+  label,
+  accentColor,
   className,
 }: {
   dragAttributes?: DraggableAttributes;
   dragListeners?: SyntheticListenerMap;
   onDuplicate?: () => void;
   onDelete?: () => void;
+  label?: string;
+  accentColor?: string;
   className?: string;
 }) {
+  const accent = accentColor ?? 'hsl(var(--primary))';
+
   return (
     <div
       className={cn(
-        'absolute -top-3.5 right-3 z-10 flex items-center rounded-md border border-slate-200 bg-slate-50 p-0.5 shadow-sm',
+        'absolute -top-3.5 right-3 z-10 flex items-center rounded-md border p-0.5 shadow-sm',
         className,
       )}
+      style={{
+        borderColor: accent,
+        backgroundColor: accent,
+      }}
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
+      {label ? (
+        <span className="px-2 text-[10px] font-semibold text-white">{label}</span>
+      ) : null}
       <Button
         type="button"
         variant="ghost"
         size="icon"
-        className="h-7 w-7 cursor-grab text-slate-600 active:cursor-grabbing"
+        className="h-7 w-7 cursor-grab text-white hover:bg-white/20 hover:text-white active:cursor-grabbing"
         aria-label="Drag to reorder"
         {...dragAttributes}
         {...dragListeners}
@@ -44,7 +57,7 @@ export function EditorNodeToolbar({
           type="button"
           variant="ghost"
           size="icon"
-          className="h-7 w-7 text-slate-600"
+          className="h-7 w-7 text-white hover:bg-white/20 hover:text-white"
           aria-label="Duplicate"
           onClick={(e) => {
             e.stopPropagation();
@@ -59,7 +72,7 @@ export function EditorNodeToolbar({
           type="button"
           variant="ghost"
           size="icon"
-          className="h-7 w-7 text-slate-600 hover:text-rose-600"
+          className="h-7 w-7 text-white hover:bg-white/20 hover:text-white"
           aria-label="Delete"
           onClick={(e) => {
             e.stopPropagation();
