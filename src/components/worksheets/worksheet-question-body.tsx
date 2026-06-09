@@ -19,19 +19,20 @@ export function WorksheetQuestionBody({
   if (question.question_type === 'multiple_choice' && options.length > 0) {
     if (horizontal) {
       return (
-        <div className="mt-2 flex flex-wrap gap-3">
+        <div className="mt-4 flex flex-wrap gap-x-8 gap-y-2 text-sm">
           {options.map((option, optionIndex) => (
             <div
               key={`${question.id}_opt_${optionIndex}`}
-              className="flex min-w-[72px] flex-col items-center gap-0.5 text-center"
+              className="flex min-w-0 items-baseline"
+              style={optMuted}
             >
               <span
-                className="text-xs font-semibold"
+                className="shrink-0 font-medium"
                 style={{ color: theme.primaryColor }}
               >
-                {String.fromCharCode(65 + optionIndex)}
+                {String.fromCharCode(65 + optionIndex)}.
               </span>
-              <span className="text-sm" style={optMuted}>
+              <span className="text-sm ml-1">
                 {option || `Option ${String.fromCharCode(65 + optionIndex)}`}
               </span>
             </div>

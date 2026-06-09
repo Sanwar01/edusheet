@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, type Dispatch, type SetStateAction } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { PanelRightClose, SlidersHorizontal, SquareMousePointer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { EditorAppearancePanel } from '@/components/worksheets/editor-appearance-panel';
 import { EditorInspectorPanel } from '@/components/worksheets/editor-inspector-panel';
-import { ThemeSettingsSidebar } from '@/components/worksheets/theme-settings-sidebar';
 import { cn } from '@/lib/utils';
 import type {
   SectionLayoutConfig,
@@ -51,10 +51,6 @@ export function RightEditorSidebar({
   ) => void;
   onClose?: () => void;
 }) {
-  useEffect(() => {
-    if (selectedNodeId) setTab('inspector');
-  }, [selectedNodeId, setTab]);
-
   return (
     <aside className="flex min-h-0 flex-1 flex-col">
       <div className="shrink-0 space-y-3 border-b border-border p-4 pb-3">
@@ -105,18 +101,20 @@ export function RightEditorSidebar({
         {tab === 'inspector' ? (
           <EditorInspectorPanel
             content={content}
-            layout={layout}
             selectedNodeId={selectedNodeId}
             showScoring={showScoring}
             onContentChange={onContentChange}
             onUpdateSection={onUpdateSection}
-            onUpdateSectionLayout={onUpdateSectionLayout}
           />
         ) : (
-          <ThemeSettingsSidebar
+          <EditorAppearancePanel
             theme={theme}
             setTheme={setTheme}
-            embedded
+            content={content}
+            layout={layout}
+            selectedNodeId={selectedNodeId}
+            onUpdateSection={onUpdateSection}
+            onUpdateSectionLayout={onUpdateSectionLayout}
           />
         )}
       </div>

@@ -1,51 +1,53 @@
 import { z } from 'zod';
 
-export const QuestionSchema = z.object({
-  id: z.string().min(1),
-  prompt: z.string().trim().min(1, 'Question prompt is required'),
-  question_type: z.enum([
-    'short_answer',
-    'multiple_choice',
-    'true_false',
-    'fill_in_blank',
-    'matching',
-    'essay',
-  ]),
-  options: z.array(z.string()).optional().default([]),
-  answer: z.string().optional(),
-  points: z.number().int().min(1, 'Points must be at least 1').optional(),
-}).superRefine((question, ctx) => {
-  if (question.question_type === 'multiple_choice') {
-    const options = question.options ?? [];
-    if (options.length < 2) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['options'],
-        message: 'Multiple choice requires at least 2 options',
-      });
+export const QuestionSchema = z
+  .object({
+    id: z.string().min(1),
+    prompt: z.string().trim().min(1, 'Question prompt is required'),
+    question_type: z.enum([
+      'short_answer',
+      'multiple_choice',
+      'true_false',
+      'fill_in_blank',
+      'matching',
+      'essay',
+    ]),
+    options: z.array(z.string()).optional().default([]),
+    answer: z.string().optional(),
+    points: z.number().int().min(1, 'Points must be at least 1').optional(),
+  })
+  .superRefine((question, ctx) => {
+    if (question.question_type === 'multiple_choice') {
+      const options = question.options ?? [];
+      if (options.length < 2) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['options'],
+          message: 'Multiple choice requires at least 2 options',
+        });
+      }
+      if (!question.answer || !options.includes(question.answer)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['answer'],
+          message: 'Multiple choice requires selecting a correct answer',
+        });
+      }
     }
-    if (!question.answer || !options.includes(question.answer)) {
+
+    if (
+      question.question_type === 'true_false' &&
+      question.answer &&
+      question.answer !== 'True' &&
+      question.answer !== 'False'
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['answer'],
-        message: 'Multiple choice requires selecting a correct answer',
+        message: 'True/False answer must be True or False',
       });
     }
-  }
-
-  if (
-    question.question_type === 'true_false' &&
-    question.answer &&
-    question.answer !== 'True' &&
-    question.answer !== 'False'
-  ) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['answer'],
-      message: 'True/False answer must be True or False',
-    });
-  }
-});
+  });
 
 const HeadingBlockSchema = z.object({
   id: z.string().min(1),
@@ -94,7 +96,10 @@ export const StructureBlockSchema = z.discriminatedUnion('block_type', [
   ImageBlockSchema,
 ]);
 
-export const SectionItemSchema = z.union([QuestionSchema, StructureBlockSchema]);
+export const SectionItemSchema = z.union([
+  QuestionSchema,
+  StructureBlockSchema,
+]);
 
 export const SectionSchema = z.object({
   id: z.string().min(1),
@@ -118,7 +123,9 @@ const SectionLayoutConfigSchema = z.object({
 export const LayoutSchema = z.object({
   sectionOrder: z.array(z.string()).default([]),
   questionOrderBySection: z.record(z.string(), z.array(z.string())).default({}),
-  spacingPreset: z.enum(['compact', 'comfortable', 'spacious']).default('comfortable'),
+  spacingPreset: z
+    .enum(['compact', 'comfortable', 'spacious'])
+    .default('comfortable'),
   sectionLayouts: z
     .record(z.string(), SectionLayoutConfigSchema)
     .optional()
@@ -131,7 +138,9 @@ export const ThemeSchema = z.object({
   fontFamily: z.enum(['inter', 'lora', 'nunito']).default('inter'),
   primaryColor: z.string().default('#2563eb'),
   textColor: z.string().default('#111827'),
-  spacingPreset: z.enum(['compact', 'comfortable', 'spacious']).default('comfortable'),
+  spacingPreset: z
+    .enum(['compact', 'comfortable', 'spacious'])
+    .default('comfortable'),
   headerStyle: z.enum(['default', 'lesson']).default('default'),
   showNameLine: z.boolean().default(true),
   optionLayout: z.enum(['vertical', 'horizontal']).default('vertical'),

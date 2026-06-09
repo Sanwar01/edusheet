@@ -129,9 +129,8 @@ export const SectionQuestionsDnd = ({
             : 'border-slate-300 bg-slate-50 text-slate-500'
         }`}
       >
-        No content yet. Click{' '}
-        <span className="font-medium">Add question</span> to begin, or drop a
-        block or question here.
+        No content yet. Click <span className="font-medium">Add question</span>{' '}
+        to begin, or drop a block or question here.
       </div>
     );
   }

@@ -96,8 +96,7 @@ export function EditorPreviewPane({
           let qCounter = content.sections
             .slice(0, sectionIndex)
             .reduce(
-              (acc, s) =>
-                acc + s.questions.filter(isWorksheetQuestion).length,
+              (acc, s) => acc + s.questions.filter(isWorksheetQuestion).length,
               0,
             );
           for (const row of section.questions) {

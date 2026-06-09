@@ -29,10 +29,7 @@ export function WorksheetQuestionEditorView({
         className={cn('flex items-start gap-1', promptWeight)}
         style={{ color: theme.textColor }}
       >
-        <span
-          className="shrink-0 pt-0.5"
-          style={{ color: theme.primaryColor }}
-        >
+        <span className="shrink-0 pt-0.5" style={{ color: theme.primaryColor }}>
           {index}.
         </span>
         <textarea

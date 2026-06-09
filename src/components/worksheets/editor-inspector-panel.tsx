@@ -6,15 +6,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { QuestionInspector } from '@/components/worksheets/question-inspector';
 import { SectionInspector } from '@/components/worksheets/section-inspector';
 import { StructureBlockInspector } from '@/components/worksheets/structure-block-inspector';
-import { defaultSectionLayout } from '@/features/worksheets/layout';
 import {
   resolveEditorSelection,
   selectionLabel,
 } from '@/features/worksheets/editor/resolve-editor-selection';
 import type {
-  SectionLayoutConfig,
   WorksheetContent,
-  WorksheetLayout,
   WorksheetQuestion,
   WorksheetSection,
   WorksheetStructureBlock,
@@ -23,15 +20,12 @@ import { isStructureBlock, isWorksheetQuestion } from '@/types/worksheet';
 
 export function EditorInspectorPanel({
   content,
-  layout,
   selectedNodeId,
   showScoring,
   onContentChange,
   onUpdateSection,
-  onUpdateSectionLayout,
 }: {
   content: WorksheetContent;
-  layout: WorksheetLayout;
   selectedNodeId: string | null;
   showScoring: boolean;
   onContentChange: (
@@ -40,10 +34,6 @@ export function EditorInspectorPanel({
   onUpdateSection: (
     sectionId: string,
     updater: (section: WorksheetSection) => WorksheetSection,
-  ) => void;
-  onUpdateSectionLayout: (
-    sectionId: string,
-    partial: Partial<SectionLayoutConfig>,
   ) => void;
 }) {
   const selection = resolveEditorSelection(content, selectedNodeId);
@@ -137,13 +127,7 @@ export function EditorInspectorPanel({
       {selection.type === 'section' ? (
         <SectionInspector
           section={selection.section}
-          sectionLayout={
-            layout.sectionLayouts[selection.sectionId] ?? defaultSectionLayout()
-          }
           onChangeSection={(next) => onUpdateSection(selection.sectionId, () => next)}
-          onSectionLayoutChange={(partial) =>
-            onUpdateSectionLayout(selection.sectionId, partial)
-          }
         />
       ) : null}
 

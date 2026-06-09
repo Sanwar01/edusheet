@@ -12,9 +12,15 @@ import {
   logApiError,
   withApiErrorHandling,
 } from '@/lib/api/errors';
-import { buildWorksheetLayout, defaultSectionLayout } from '@/features/worksheets/layout';
+import {
+  buildWorksheetLayout,
+  defaultSectionLayout,
+} from '@/features/worksheets/layout';
 import { defaultTheme } from '@/features/worksheets/defaults';
-import { LayoutSchema, WorksheetContentSchema } from '@/lib/validators/worksheet';
+import {
+  LayoutSchema,
+  WorksheetContentSchema,
+} from '@/lib/validators/worksheet';
 import type {
   WorksheetContent,
   WorksheetLayout,
@@ -79,11 +85,7 @@ function renderQuestionHtml(
       mcHtml = `<div class="options-row">`;
       for (let i = 0; i < opts.length; i += 1) {
         const letter = String.fromCharCode(65 + i);
-        mcHtml += `
-          <div class="opt-h">
-            <div class="opt-letter" style="color:${theme.primaryColor}">${letter}</div>
-            <div class="opt-text" style="color:${optColor}">${escapeHtml(opts[i])}</div>
-          </div>`;
+        mcHtml += `<div class="opt-h"><span class="opt-letter-inline" style="color:${theme.primaryColor}">${letter})</span><span style="color:${optColor}">${escapeHtml(opts[i])}</span></div>`;
       }
       mcHtml += `</div>`;
     } else {
@@ -240,8 +242,7 @@ function buildPrintableHtml({
     .map((section, sectionIndex) => {
       const safeHeading = escapeHtml(section.heading || '');
       const sectionPoints = (section.questions ?? []).reduce(
-        (sum, row) =>
-          sum + (isWorksheetQuestion(row) ? (row.points ?? 0) : 0),
+        (sum, row) => sum + (isWorksheetQuestion(row) ? (row.points ?? 0) : 0),
         0,
       );
       const sectionLayout =
@@ -267,13 +268,16 @@ function buildPrintableHtml({
           if (!isWorksheetQuestion(row)) {
             const inner = renderStructureBlockHtml(row, theme, isGrid);
             const cellClass =
-              isGrid && sectionLayout.border === 'cells'
-                ? 'question-cell'
-                : '';
+              isGrid && sectionLayout.border === 'cells' ? 'question-cell' : '';
             return `<div class="${cellClass}">${inner}</div>`;
           }
           globalQ += 1;
-          const inner = renderQuestionHtml(row, globalQ, theme, includeAnswerKey);
+          const inner = renderQuestionHtml(
+            row,
+            globalQ,
+            theme,
+            includeAnswerKey,
+          );
           const cellClass =
             isGrid && sectionLayout.border === 'cells' ? 'question-cell' : '';
           return `<div class="${cellClass}">${inner}</div>`;
@@ -339,9 +343,8 @@ function buildPrintableHtml({
       .match-list { margin: 8px 0 0 20px; padding: 0; }
       .match-list li { margin: 4px 0; }
       .options-row { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 8px; }
-      .opt-h { min-width: 72px; text-align: center; }
-      .opt-letter { font-size: 12px; font-weight: 700; }
-      .opt-text { font-size: 14px; }
+      .opt-h { display: flex; align-items: baseline; min-width: 0; }
+      .opt-letter-inline { font-weight: 600; margin-right: 0; }
       .tf-row { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; margin-top: 8px; }
       .tf-box { display: inline-block; width: 14px; height: 14px; border: 1px solid; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
       .section-points { font-size: 12px; font-weight: 500; }
@@ -420,7 +423,9 @@ async function buildPdfResponse({
 
   if (error || !worksheet) return apiJsonError('Worksheet not found', 404);
 
-  const contentParsed = WorksheetContentSchema.safeParse(worksheet.content_json);
+  const contentParsed = WorksheetContentSchema.safeParse(
+    worksheet.content_json,
+  );
   const content = (
     contentParsed.success ? contentParsed.data : worksheet.content_json
   ) as WorksheetContent;
@@ -446,7 +451,10 @@ async function buildPdfResponse({
       includeScoring,
     });
   } catch (e) {
-    return handleUnknownError(`${requestName} /api/exports/pdf (render html)`, e);
+    return handleUnknownError(
+      `${requestName} /api/exports/pdf (render html)`,
+      e,
+    );
   }
 
   const { error: insertExportError } = await supabase.from('exports').insert({

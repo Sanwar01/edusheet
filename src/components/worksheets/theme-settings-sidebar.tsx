@@ -68,18 +68,32 @@ function ThemePanelGroup({
   );
 }
 
+type ThemePanelId = 'typography' | 'layout' | 'pageHeader' | 'colors';
+
+const ALL_THEME_PANELS: ThemePanelId[] = [
+  'typography',
+  'layout',
+  'pageHeader',
+  'colors',
+];
+
 export const ThemeSettingsSidebar = ({
   theme,
   setTheme,
   onClose,
   embedded = false,
+  includePanels = ALL_THEME_PANELS,
 }: {
   theme: WorksheetTheme;
   setTheme: Dispatch<SetStateAction<WorksheetTheme>>;
   onClose?: () => void;
   /** When true, omits outer chrome (used inside the right panel tab). */
   embedded?: boolean;
+  /** Which global theme panels to show. Defaults to all. */
+  includePanels?: ThemePanelId[];
 }) => {
+  const showPanel = (id: ThemePanelId) => includePanels.includes(id);
+
   const panels = (
     <>
         <Button
@@ -92,6 +106,7 @@ export const ThemeSettingsSidebar = ({
         </Button>
 
       <div className="space-y-3">
+        {showPanel('typography') ? (
         <ThemePanelGroup
           title="Typography"
           description="Sizes and weight for titles, body copy, and question prompts."
@@ -180,7 +195,9 @@ export const ThemeSettingsSidebar = ({
             </Select>
           </div>
         </ThemePanelGroup>
+        ) : null}
 
+        {showPanel('layout') ? (
         <ThemePanelGroup
           title="Layout"
           description="Spacing and how choice lists appear in preview and PDF."
@@ -235,7 +252,9 @@ export const ThemeSettingsSidebar = ({
             </Select>
           </div>
         </ThemePanelGroup>
+        ) : null}
 
+        {showPanel('pageHeader') ? (
         <ThemePanelGroup
           title="Page header"
           description="Top of the worksheet in preview and export."
@@ -278,7 +297,9 @@ export const ThemeSettingsSidebar = ({
             </div>
           ) : null}
         </ThemePanelGroup>
+        ) : null}
 
+        {showPanel('colors') ? (
         <ThemePanelGroup
           title="Colors"
           description="Customize the appearance of your worksheet"
@@ -326,6 +347,7 @@ export const ThemeSettingsSidebar = ({
             />
           </div>
         </ThemePanelGroup>
+        ) : null}
       </div>
     </>
   );
